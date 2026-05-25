@@ -6,26 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CASS Resident App</title>
     {% webpush_header %}
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% if system_settings and system_settings.branding_logo %}
+    <link rel="icon" href="{{ system_settings.branding_logo.url }}">
+    {% endif %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --surface-color: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --accent: #0ea5e9;
+            --bg-color: #ECEFF1;
+            --surface-color: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --text-main: #0D0907;
+            --text-muted: #64748b;
+            --primary: #191970;
+            --accent: #191970;
         }
 
         body { 
-            font-family: 'Outfit', sans-serif; 
+            font-family: 'Inter', sans-serif; 
             margin: 0; 
             background-color: var(--bg-color); 
-            background-image: 
-                radial-gradient(at 50% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 60%),
-                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
-            background-attachment: fixed;
             color: var(--text-main); 
             min-height: 100vh;
             display: flex;
@@ -37,8 +36,8 @@
             max-width: 480px;
             min-height: 100vh;
             position: relative;
-            background: rgba(15, 23, 42, 0.4);
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
             padding-bottom: 80px;
         }
 
@@ -61,6 +60,59 @@
             font-size: 14px;
         }
 
+        /* Notification Bell */
+        .bell-container {
+            position: relative;
+            cursor: pointer;
+            padding: 8px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .bell-icon { width: 24px; height: 24px; color: var(--text-main); }
+        
+        .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 24px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+        }
+        .notif-dropdown.show { display: block; }
+        
+        .notif-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-title { font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
+        .notif-body { color: var(--text-muted); line-height: 1.4; }
+        .notif-time { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+        .empty-state { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+
         .content {
             padding: 0 24px;
         }
@@ -73,19 +125,16 @@
             gap: 12px;
             width: 100%;
             padding: 18px;
-            background: linear-gradient(135deg, #38bdf8, #3b82f6);
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 20px;
             font-size: 18px;
             font-weight: 600;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin-bottom: 16px;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
             cursor: pointer;
-            transition: transform 0.2s;
         }
-        .btn-primary:active { transform: scale(0.98); }
 
         .btn-secondary {
             display: flex;
@@ -94,19 +143,42 @@
             gap: 12px;
             width: 100%;
             padding: 18px;
-            background: var(--surface-color);
+            background: var(--primary);
             backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
+            border: 1px solid var(--primary);
+            color: white;
             border-radius: 20px;
             font-size: 16px;
             font-weight: 500;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin-bottom: 30px;
             cursor: pointer;
+        }
+
+        
+        /* Notification Upgrade */
+        .notif-dropdown {
+            max-height: 350px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .notif-item {
+            display: flex; gap: 12px; align-items: flex-start;
+            padding: 16px; border-bottom: 1px solid var(--border-color);
             transition: background 0.2s;
         }
-        .btn-secondary:active { background: rgba(255,255,255,0.05); }
+        .notif-item:hover { background: rgba(0,0,0,0.02); }
+        .notif-icon {
+            width: 32px; height: 32px; border-radius: 50%; background: rgba(25,25,112,0.1); color: var(--primary);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+        }
+        
+        /* Card Icon Anchor */
+        .card-anchor {
+            width: 40px; height: 40px; border-radius: 12px; background: rgba(0,0,0,0.05);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary); margin-right: 12px; flex-shrink: 0;
+        }
 
         /* Cards */
         .section-title {
@@ -141,9 +213,9 @@
             font-size: 12px;
             font-weight: 600;
         }
-        .status-pending { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
-        .status-on_the_way { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-        .status-delivered { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+        .status-pending { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        .status-on_the_way { background: rgba(56, 189, 248, 0.15); color: #0284c7; }
+        .status-delivered { background: rgba(16, 185, 129, 0.15); color: #059669; }
 
         /* Bottom Nav */
         .bottom-nav {
@@ -152,7 +224,7 @@
             left: 0;
             width: 100%;
             height: 70px;
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             border-top: 1px solid var(--border-color);
             display: flex;
@@ -184,17 +256,12 @@
             align-items: flex-end;
         }
         .modal-content {
-            background: #1e293b;
+            background: var(--bg-color);
             width: 100%;
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
             padding: 24px;
             box-sizing: border-box;
-            animation: slideUpModal 0.3s ease-out;
-        }
-        @keyframes slideUpModal {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
         }
 
         .form-group { margin-bottom: 16px; }
@@ -202,11 +269,11 @@
         .form-group select, .form-group input {
             width: 100%;
             padding: 14px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.05);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            color: white;
-            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             font-size: 16px;
             box-sizing: border-box;
         }
@@ -218,15 +285,37 @@
 </head>
 <body>
     <div class="mobile-container">
-        <!-- Header -->
+        <!-- HEADER -->
         <div class="header">
             <div>
-                <h1>Hi, {{ user.username|default:"Resident" }} 👋</h1>
-                <p>Welcome to CASS Services</p>
+                <h1>Hi, {{ request.user.username }} 👋</h1>
+                <p>Welcome to CASS</p>
             </div>
-            <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;">
-                {{ user.username|make_list|first|upper|default:"R" }}
+            
+            <div class="bell-container" id="bellBtn">
+                <svg class="bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                {% if unread_count > 0 %}
+                <span class="badge" id="notifBadge">{{ unread_count }}</span>
+                {% endif %}
             </div>
+        </div>
+
+        <!-- NOTIFICATION DROPDOWN -->
+        <div class="notif-dropdown" id="notifDropdown">
+            <div style="font-weight: 700; font-size: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px;">
+                Your Notifications
+            </div>
+            {% if my_notifications %}
+                {% for notif in my_notifications %}
+                <div class="notif-item">
+                    <div class="notif-title">{{ notif.title }}</div>
+                    <div class="notif-body">{{ notif.message }}</div>
+                    <div class="notif-time">{{ notif.created_at|timesince }} ago</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">No notifications yet.</div>
+            {% endif %}
         </div>
 
         <div class="content">
@@ -245,27 +334,53 @@
             </button>
 
             <!-- Recent Requests -->
-            <div class="section-title">
+            <div class="section-title" style="margin-bottom: 12px;">
                 <span>Recent Requests</span>
-                <span style="font-size: 14px; color: var(--accent); cursor: pointer;">See All</span>
+                {% if user.account_balance > 0 %}
+                <span style="font-size: 13px; background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 4px 10px; border-radius: 12px; font-weight: 600;">Due: ${{ user.account_balance }}</span>
+                {% else %}
+                <span style="font-size: 13px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 12px; font-weight: 600;">Balance: $0.00</span>
+                {% endif %}
             </div>
 
             {% for req in my_requests %}
             <div class="card">
                 <div class="card-left">
                     <span class="card-title">Water Delivery ({{ req.volume_liters }}L)</span>
-                    <span class="card-subtitle">{{ req.created_at|date:"M d, H:i" }}</span>
+                    <span class="card-subtitle">{{ req.created_at|date:"M d, H:i" }} &bull; <strong>${{ req.cost }}</strong></span>
                 </div>
                 <div class="status-badge status-{{ req.status|lower }}">
                     {{ req.get_status_display }}
                 </div>
             </div>
             {% empty %}
-            <div style="text-align: center; padding: 30px; color: var(--text-muted);">
-                You have no active requests.
-            </div>
-            {% endfor %}
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 20px; padding: 30px 20px; color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border-color); margin-top: 40px; background: rgba(0,0,0,0.02);">
+        {% if system_settings and system_settings.branding_logo %}
+        <img src="{{ system_settings.branding_logo.url }}" alt="Organization Logo" style="height: 48px; object-fit: contain;">
+        {% endif %}
+        <div style="text-align: left; line-height: 1.6;">
+            {% if system_settings %}
+                {% if system_settings.company_address %}<div style="font-weight: 500; color: var(--text-main);">{{ system_settings.company_address }}</div>{% endif %}
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    {% if system_settings.company_email %}
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        {{ system_settings.company_email }}
+                    </span>
+                    {% endif %}
+                    {% if system_settings.company_phone %}
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        {{ system_settings.company_phone }}
+                    </span>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div style="opacity: 0.7; margin-top: 4px;">&copy; {% now "Y" %} CASS. All rights reserved.</div>
         </div>
+    </div>
+    </div>
+    </div>
 
         <!-- Bottom Nav -->
         <div class="bottom-nav">
@@ -277,7 +392,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 History
             </a>
-            <a href="/admin/logout/?next=/app/" class="nav-item">
+            <a href="{% url 'logout' %}" class="nav-item">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Logout
             </a>
@@ -290,32 +405,94 @@
                     <h2 style="margin: 0; font-size: 20px;">New Water Request</h2>
                     <svg onclick="document.getElementById('waterModal').style.display='none'" style="cursor: pointer;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </div>
-                <form method="POST" action="/app/">
+                <form method="POST" action="/app/" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="form-group">
                         <label>Volume Required (Liters)</label>
-                        <input type="number" name="volume" value="1000" min="100" max="5000" required>
+                        <input type="number" id="volumeInput" name="volume" value="1000" min="100" max="5000" required>
                     </div>
+
                     <div class="form-group">
                         <label>Priority Level</label>
-                        <select name="priority">
+                        <select name="priority" id="prioritySelect">
                             <option value="NORMAL">Normal (Within 48 hrs)</option>
                             <option value="URGENT">Urgent (Within 24 hrs)</option>
                             <option value="CRITICAL">Critical (Emergency/ASAP)</option>
                         </select>
                     </div>
+
+                    <!-- Live Price Display -->
+                    <div style="background: rgba(25, 25, 112, 0.07); border: 1px solid rgba(25, 25, 112, 0.15); border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; color: var(--text-muted);">Estimated Total</span>
+                        <span id="priceDisplay" style="font-size: 22px; font-weight: 700; color: var(--primary);">$50.00</span>
+                    </div>
+
                     <div class="form-group">
                         <label>Optional Note</label>
-                        <textarea name="note" rows="2" placeholder="Driver instructions..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; color: white; font-family: 'Outfit', sans-serif; box-sizing: border-box;"></textarea>
+                        <textarea name="note" rows="2" placeholder="Driver instructions..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.05); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-family: 'Inter', sans-serif; box-sizing: border-box;"></textarea>
                     </div>
+
                     <div class="form-group">
                         <label>Optional Photo</label>
-                        <input type="file" name="photo" accept="image/*">
+                        <input type="file" name="photo" accept="image/*" style="width:100%; padding: 8px; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 12px; font-family: 'Inter', sans-serif; box-sizing: border-box;">
                     </div>
+
                     <button type="submit" class="btn-primary" style="margin-top: 10px; margin-bottom: 0;">Submit Request</button>
                 </form>
             </div>
         </div>
     </div>
+
+    <script>
+        // --- Live Price Calculator ---
+        // Prices injected from the server (set by the company in the Admin Dashboard)
+        const PRICE_PER_LITER = {{ price_per_liter }};
+        const DELIVERY_FEE = {{ delivery_fee }};
+        const URGENT_SURCHARGE = {{ urgent_surcharge }};
+        const CRITICAL_SURCHARGE = {{ critical_surcharge }};
+
+        function updatePrice() {
+            const volume = parseFloat(document.getElementById('volumeInput').value) || 0;
+            const priority = document.getElementById('prioritySelect').value;
+
+            let total = (volume * PRICE_PER_LITER) + DELIVERY_FEE;
+            if (priority === 'URGENT') total += URGENT_SURCHARGE;
+            if (priority === 'CRITICAL') total += CRITICAL_SURCHARGE;
+
+            document.getElementById('priceDisplay').textContent = '$' + total.toFixed(2);
+        }
+
+        document.getElementById('volumeInput').addEventListener('input', updatePrice);
+        document.getElementById('prioritySelect').addEventListener('change', updatePrice);
+
+        // Set initial price on page load
+        updatePrice();
+        // Notification Dropdown Logic
+        const bellBtn = document.getElementById('bellBtn');
+        const notifDropdown = document.getElementById('notifDropdown');
+        const badge = document.getElementById('notifBadge');
+        
+        bellBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            notifDropdown.classList.toggle('show');
+            
+            // If opening and there's a badge, mark read
+            if (notifDropdown.classList.contains('show') && badge) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                fetch('/api/notifications/read/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                }).then(() => {
+                    badge.style.display = 'none';
+                });
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!notifDropdown.contains(e.target) && e.target !== bellBtn) {
+                notifDropdown.classList.remove('show');
+            }
+        });
+    </script>
 </body>
 </html>

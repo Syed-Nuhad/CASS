@@ -6,6 +6,9 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         RESIDENT = 'RESIDENT', 'Resident'
         DRIVER = 'DRIVER', 'Driver'
+        STAFF_DISPATCH = 'STAFF_DISPATCH', 'Dispatch Staff'
+        STAFF_INVENTORY = 'STAFF_INVENTORY', 'Inventory Staff'
+        STAFF_ACCOUNTS = 'STAFF_ACCOUNTS', 'Accounts Staff'
         ADMIN = 'ADMIN', 'Admin'
         
     # The user's role in the system

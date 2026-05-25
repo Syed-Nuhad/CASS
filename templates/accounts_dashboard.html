@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block header_title %}Financial Accounts Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+
+        
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 40px 20px;
+            flex: 1;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+        .header-flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        h1 { margin: 0; font-size: 28px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 15px; margin-top: 4px; }
+        
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-print { background: var(--primary); color: white; }
+        .btn-logout { background: rgba(239, 68, 68, 0.1); color: var(--expense); }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            box-sizing: border-box;
+            max-width: 100%;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .card-label { font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+        .card-value { font-size: 36px; font-weight: 700; margin-top: 8px; }
+        .val-income { color: var(--income); }
+        .val-expense { color: var(--expense); }
+        .val-profit { color: var(--primary); }
+
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;}
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th { color: var(--text-muted); font-weight: 600; }
+        
+        .expense-form {
+            background: rgba(241, 245, 249, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px dashed #cbd5e1;
+        }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);}
+        .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-family: 'Inter', sans-serif;}
+        .btn-submit { background: var(--expense); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        
+        .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--border-color); }
+        .tab-btn { padding: 12px 24px; cursor: pointer; border: none; background: transparent; font-size: 15px; font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="header-flex">
+            <div>
+                <div class="subtitle">Monthly and Annual Performance Report - {{ current_year }}</div>
+            </div>
+            <div class="no-print" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a id="pdf-export-link" href="{% url 'export_financial_pdf' %}?type=monthly" class="btn-action btn-print">Save Monthly PDF</a>
+            </div>
+        </div>
+
+        <div class="tabs no-print">
+            <button class="tab-btn active" onclick="switchTab('monthly', this)">Monthly Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('annual', this)">Annual Report</button>
+        </div>
+
+        <div id="monthly-tab" class="tab-content active">
+            <div class="summary-cards">
+            <div class="card">
+                <div class="card-label">Total Income ({{ current_month_name }})</div>
+                <div class="card-value val-income">${{ monthly_income }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Total Expenses ({{ current_month_name }})</div>
+                <div class="card-value val-expense">-${{ monthly_expenses }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Net Profit ({{ current_month_name }})</div>
+                <div class="card-value val-profit">${{ monthly_profit }}</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Left Side: Automated Income -->
+            <div>
+                <div class="section-title">Recent Delivery Revenue</div>
+                <div style="overflow-x: auto; width: 100%;">
+        <div class="table-responsive">
+<table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Time</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in recent_income %}
+                        <tr>
+                            <td>#{{ req.id|stringformat:"04d" }}</td>
+                            <td>{{ req.updated_at|date:"M d, H:i" }}</td>
+                            <td style="text-align: right; color: var(--income); font-weight: 600;">+${{ req.cost }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No revenue recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+</div>
+        </div>
+            </div>
+
+            <!-- Right Side: Manual Expenses -->
+            <div>
+                <div class="section-title">Company Expenses</div>
+                
+                <div class="expense-form no-print">
+                    <form method="POST" action="{% url 'accounts_dashboard' %}">
+                        {% csrf_token %}
+                        <div style="font-weight: 600; margin-bottom: 12px; font-size: 14px;">Log New Expense</div>
+                        <div class="form-group">
+                            <label>Expense Description</label>
+                            <input type="text" name="description" required placeholder="e.g. Fuel, Maintenance, Salaries">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" step="0.01" name="amount" required placeholder="0.00">
+                        </div>
+                        <button type="submit" class="btn-submit">Record Expense</button>
+                    </form>
+                </div>
+
+                <div style="overflow-x: auto; width: 100%;">
+        <div class="table-responsive">
+<table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in recent_expenses %}
+                        <tr>
+                            <td>{{ exp.description }}</td>
+                            <td>{{ exp.date|date:"M d, Y" }}</td>
+                            <td style="text-align: right; color: var(--expense); font-weight: 600;">-${{ exp.amount }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No expenses recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+</div>
+        </div>
+            </div>
+        </div>
+        </div> <!-- end monthly-tab -->
+
+        <div id="annual-tab" class="tab-content">
+            <div class="section-title" style="margin-bottom: 20px;">{{ current_year }} Annual Report</div>
+        <div style="overflow-x: auto; width: 100%;">
+        <div class="table-responsive">
+<table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th style="text-align: right;">Income</th>
+                    <th style="text-align: right;">Expenses</th>
+                    <th style="text-align: right;">Net Profit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in annual_data %}
+                <tr>
+                    <td style="font-weight: 500;">{{ row.month }}</td>
+                    <td style="text-align: right; color: var(--income);">${{ row.income }}</td>
+                    <td style="text-align: right; color: var(--expense);">-${{ row.expense }}</td>
+                    <td style="text-align: right; font-weight: 600; color: {% if row.profit >= 0 %}var(--primary){% else %}var(--expense){% endif %};">
+                        ${{ row.profit }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: rgba(0,0,0,0.02); border-top: 2px solid var(--border-color);">
+                    <td style="font-weight: 700;">Grand Total</td>
+                    <td style="text-align: right; color: var(--income); font-weight: 700;">${{ annual_total_income }}</td>
+                    <td style="text-align: right; color: var(--expense); font-weight: 700;">-${{ annual_total_expense }}</td>
+                    <td style="text-align: right; font-weight: 700; color: {% if annual_total_profit >= 0 %}var(--primary){% else %}var(--expense){% endif %};">
+                        ${{ annual_total_profit }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+</div>
+        </div>
+        </div> <!-- end annual-tab -->
+
+        <script>
+            function switchTab(tabId, btn) {
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(tabId + '-tab').classList.add('active');
+                
+                // Update PDF link dynamically
+                const pdfLink = document.getElementById('pdf-export-link');
+                if (pdfLink) {
+                    pdfLink.href = "{% url 'export_financial_pdf' %}?type=" + tabId;
+                    pdfLink.innerText = "Save " + (tabId === 'monthly' ? "Monthly" : "Annual") + " PDF";
+                }
+            }
+        </script>
+    </div> <!-- End .container -->
+{% endblock %}

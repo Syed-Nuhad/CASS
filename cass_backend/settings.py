@@ -9,7 +9,7 @@ SECRET_KEY = 'django-insecure-$u!hk=85(th@qi+9mtx9luk*q7b9uh_79pci%ol-eyu#j%n&sr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -55,6 +55,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'services.context_processors.system_settings',
             ],
         },
     },
@@ -98,6 +99,14 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Email Configuration (Mocked for development)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@cass-system.com'
+
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": "BBEb2fP6rP-O44K4wFz_Bf79tO70Y4bN9hPZg6oWcPxO4-vO_cZ1qD24YvIIf0aD_v4Mv5s8lY_E4f2-tA4I1J4",
     "VAPID_PRIVATE_KEY": "a-fake-vapid-private-key-for-development",
@@ -116,11 +125,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-        },
-    },
-}
+# Authentication Routing
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'
+
+# Redis channel layer removed for local testing without Redis.
+# Using InMemoryChannelLayer (defined above) instead.

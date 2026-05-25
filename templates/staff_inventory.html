@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block header_title %}Inventory Control Center{% endblock %}
+
+{% block extra_css %}
+<style>
+
+        
+        
+        .container {
+            box-sizing: border-box;
+            max-width: 100%;
+            background: var(--surface-color);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        }
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        p.subtitle {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .inventory-box {
+            background: rgba(25, 25, 112, 0.05);
+            border: 1px solid rgba(25, 25, 112, 0.1);
+            border-radius: 20px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .inventory-number {
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+            line-height: 1;
+        }
+        .inventory-label {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        
+        .request-card {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .request-info h3 { margin: 0 0 4px 0; font-size: 18px; color: var(--accent); }
+        .request-info p { margin: 0; color: var(--text-muted); font-size: 14px; }
+        
+        .btn-forward {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-forward:hover { opacity: 0.9; }
+
+        .btn-logout {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .staff-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(25, 25, 112, 0.1);
+            border: 1px solid rgba(25, 25, 112, 0.2);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+    
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="header-flex">
+            <div>
+                <div class="staff-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Inventory & Routing
+                </div>
+                <h2>Order Queue</h2>
+                <p class="subtitle">Review customer orders and forward them to the driver hub.</p>
+            </div>
+        </div>
+
+        <div class="inventory-box">
+            <div class="inventory-number">{{ inventory.total_water_liters }} L</div>
+            <div class="inventory-label">Live Water Inventory Available</div>
+        </div>
+        
+        <h3 style="margin-top: 40px; margin-bottom: 20px; font-size: 18px;">Pending Customer Orders</h3>
+
+        {% for req in pending_requests %}
+        <div class="request-card">
+            <div class="request-info">
+                <h3>{{ req.volume_liters }} Liters</h3>
+                <p><strong>Resident:</strong> {{ req.resident.username }} &bull; <strong>Time:</strong> {{ req.created_at|date:"M d, H:i" }}</p>
+                <p><strong>Priority:</strong> {{ req.get_priority_display }}</p>
+            </div>
+            <form method="POST" action="{% url 'staff_inventory' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="forward">
+                <input type="hidden" name="request_id" value="{{ req.id }}">
+                <button type="submit" class="btn-forward">Forward to Driver Hub</button>
+            </form>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted); background: rgba(0,0,0,0.02); border-radius: 16px;">
+            No pending orders waiting to be forwarded.
+        </div>
+        {% endfor %}
+
+    </div>
+
+{% endblock %}

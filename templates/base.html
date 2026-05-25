@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASS Dispatch - Premium</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% if system_settings and system_settings.branding_logo %}
+    <link rel="icon" href="{{ system_settings.branding_logo.url }}">
+    {% endif %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --surface-color: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary-glow: #3b82f6;
-            --accent: #0ea5e9;
+            --bg-color: #ECEFF1;
+            --surface-color: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --text-main: #0D0907;
+            --text-muted: #64748b;
+            --primary-glow: #191970;
+            --accent: #191970;
+            --important-text: #191970;
         }
 
         body { 
-            font-family: 'Outfit', sans-serif; 
+            font-family: 'Inter', sans-serif; 
             margin: 0; 
             background-color: var(--bg-color); 
             background-image: 
@@ -26,12 +30,16 @@
             background-attachment: fixed;
             color: var(--text-main); 
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--important-text);
         }
 
-        /* Glassmorphism Sidebar */
         .sidebar { 
             width: 260px; 
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-right: 1px solid var(--border-color);
@@ -39,12 +47,11 @@
             height: 100vh; 
             padding-top: 30px; 
             z-index: 100;
+            overflow-x: hidden;
         }
         .sidebar h2 { 
             text-align: center; 
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--important-text);
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 40px; 
@@ -61,16 +68,23 @@
             border-left: 3px solid transparent;
         }
         .sidebar a:hover { 
-            background: rgba(255, 255, 255, 0.03); 
-            color: var(--text-main); 
+            background: rgba(0, 0, 0, 0.03); 
+            color: var(--important-text); 
             border-left: 3px solid var(--accent);
             padding-left: 35px;
         }
 
+        .footer-main { margin-left: -40px; margin-right: -40px; margin-bottom: -40px; }
         /* Main Content Area */
         .main-content { 
             margin-left: 260px; 
             padding: 40px; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            min-width: 0;
+            max-width: 100%;
         }
 
         /* Glassmorphism Header */
@@ -84,12 +98,10 @@
             border: 1px solid var(--border-color);
             padding: 20px 40px; 
             border-radius: 20px; 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
             margin-bottom: 40px; 
-            transition: transform 0.3s ease;
-        }
-        .header:hover {
-            transform: translateY(-2px);
+            box-sizing: border-box;
+            max-width: 100%;
         }
         .header h1 { 
             margin: 0; 
@@ -112,24 +124,17 @@
 
         /* Cards */
         .card { 
+            box-sizing: border-box;
             background: var(--surface-color);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
             border-radius: 24px; 
             padding: 30px; 
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
             margin-bottom: 30px; 
-            animation: slideUp 0.6s ease-out forwards;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        
-        .card:nth-child(1) { animation-delay: 0.1s; }
-        .card:nth-child(2) { animation-delay: 0.2s; }
-        
-        @keyframes slideUp {
-            to { opacity: 1; transform: translateY(0); }
+            min-width: 0;
+            max-width: 100%;
         }
 
         .card h2 {
@@ -163,13 +168,10 @@
         }
         
         tbody tr {
-            background: rgba(255, 255, 255, 0.02);
-            transition: all 0.2s ease;
+            background: rgba(0, 0, 0, 0.02);
         }
         tbody tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: scale(1.01);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.05);
         }
         
         tbody tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
@@ -186,19 +188,17 @@
         }
         .priority-critical { 
             background: rgba(239, 68, 68, 0.15); 
-            color: #fca5a5; 
+            color: #ef4444; 
             border: 1px solid rgba(239, 68, 68, 0.3);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
         }
         .priority-urgent { 
             background: rgba(245, 158, 11, 0.15); 
-            color: #fcd34d; 
+            color: #d97706; 
             border: 1px solid rgba(245, 158, 11, 0.3);
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
         }
         .priority-normal { 
             background: rgba(16, 185, 129, 0.15); 
-            color: #6ee7b7; 
+            color: #059669; 
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
         
@@ -209,47 +209,185 @@
             border-radius: 50%;
             background-color: #10b981;
             margin-right: 8px;
-            box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
-            animation: pulse 2s infinite;
+        }
+
+        /* Responsive Mobile Layout */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary-glow);
+            cursor: pointer;
+            padding: 8px;
+            margin-right: 15px;
         }
         
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px 15px;
+            }
+            
+            .header {
+                padding: 15px 20px;
+                border-radius: 12px;
+                margin-bottom: 25px;
+                justify-content: flex-start;
+                gap: 15px;
+            }
+            
+            .header-right {
+                margin-left: auto;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-profile-text {
+                display: none !important;
+            }
+            .logout-text {
+                display: none !important;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            .footer-main {
+                margin-left: -15px;
+                margin-right: -15px;
+                margin-bottom: -20px;
+            }
         }
     </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="sidebar">
-        <h2>CASS</h2>
-        <a href="/">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 40px; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                {% if system_settings and system_settings.branding_logo %}
+                <img src="{{ system_settings.branding_logo.url }}" alt="CASS Logo" style="height: 40px; max-width: 100px; object-fit: contain;">
+                {% endif %}
+                <h2 style="margin: 0; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">CASS</h2>
+            </div>
+            <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.remove('active')" style="margin: 0; padding: 4px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
             Live Dispatch
         </a>
-        <a href="/admin/">
+        {% if user.is_superuser or user.role == 'STAFF_INVENTORY' %}
+        <a href="{% url 'staff_inventory' %}" class="{% if request.resolver_match.url_name == 'staff_inventory' %}active{% endif %}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            Inventory
+        </a>
+        {% endif %}
+        {% if user.is_superuser or user.role == 'STAFF_ACCOUNTS' %}
+        <a href="{% url 'accounts_dashboard' %}" class="{% if request.resolver_match.url_name == 'accounts_dashboard' %}active{% endif %}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Accounts
+        </a>
+        {% endif %}
+        {% if user.is_superuser %}
+        <a href="{% url 'admin:index' %}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             System Admin
         </a>
+        {% endif %}
     </div>
     <div class="main-content">
         <div class="header">
-            <h1><span class="pulse"></span> Live Dispatch Center</h1>
-            <div class="user-profile">
-                {% if user.is_authenticated %}
-                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px;">
-                    {{ user.username|make_list|first|upper }}
+            <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('active')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1>{% block header_title %}<span class="pulse"></span> Live Dispatch Center{% endblock %}</h1>
+            
+            <div class="header-right" style="display:flex; gap:15px; align-items:center;">
+                <div class="user-profile">
+                    {% if user.is_authenticated %}
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary-glow); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px;">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                    <div class="user-profile-text">
+                        <div><strong>{{ user.username }}</strong></div>
+                        <div style="font-size: 12px; color: var(--text-muted);">{{ user.role }}</div>
+                    </div>
+                    <a href="{% url 'logout' %}" style="margin-left: 10px; color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 14px; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'" title="Logout">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span class="logout-text">Logout</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}">Log in to Dispatch</a>
+                    {% endif %}
                 </div>
-                <div>
-                    <div><strong>{{ user.username }}</strong></div>
-                    <div style="font-size: 12px; color: var(--text-muted);">{{ user.role }}</div>
-                </div>
-                {% else %}
-                <a href="/admin/login/?next=/">Log in to Dispatch</a>
-                {% endif %}
             </div>
         </div>
+        
+        {% if messages %}
+        <div style="margin: 20px 0;">
+            {% for message in messages %}
+            <div style="padding: 16px; border-radius: 8px; margin-bottom: 10px; font-weight: 500; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;{% elif message.tags == 'success' %}background: #dcfce7; color: #166534; border: 1px solid #86efac;{% else %}background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
+
+        <div class="footer-main" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 20px; padding: 30px 40px; color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border-color); margin-top: auto; background: rgba(0,0,0,0.02);">
+        {% if system_settings and system_settings.branding_logo %}
+        <img src="{{ system_settings.branding_logo.url }}" alt="Organization Logo" style="height: 48px; object-fit: contain;">
+        {% endif %}
+        <div style="text-align: left; line-height: 1.6;">
+            {% if system_settings %}
+                {% if system_settings.company_address %}<div style="font-weight: 500; color: var(--text-main);">{{ system_settings.company_address }}</div>{% endif %}
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    {% if system_settings.company_email %}
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        {{ system_settings.company_email }}
+                    </span>
+                    {% endif %}
+                    {% if system_settings.company_phone %}
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        {{ system_settings.company_phone }}
+                    </span>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div style="opacity: 0.7; margin-top: 4px;">&copy; {% now "Y" %} CASS. All rights reserved.</div>
+        </div>
+    </div>
+    </div>
+    </div>
     </div>
 
     <script>

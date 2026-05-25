@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Resident App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        surface: '#ffffff',
+                        background: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden antialiased">
+    <!-- Initial Data passed from Django securely -->
+    <script>
+        window.INITIAL_DATA = {{ initial_data_json|safe }};
+        window.CSRF_TOKEN = "{{ csrf_token_value }}";
+        
+        // Setup Axios defaults
+        axios.defaults.headers.common['X-CSRFToken'] = window.CSRF_TOKEN;
+    </script>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Components
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const data = window.INITIAL_DATA;
+
+            return (
+                <div className="flex flex-col h-screen bg-slate-50">
+                    {/* Header */}
+                    <div className="bg-white px-6 pt-12 pb-4 shadow-sm flex justify-between items-center z-10 sticky top-0">
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">Welcome back,</p>
+                            <h1 className="text-xl font-bold text-slate-800">{data.user.username}</h1>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg border border-blue-200">
+                            {data.user.username.charAt(0).toUpperCase()}
+                        </div>
+                    </div>
+
+                    {/* Main Content Scrollable Area */}
+                    <div className="flex-1 overflow-y-auto pb-24 px-4 pt-6 no-scrollbar">
+                        {activeTab === 'home' && <HomeView data={data} setActiveTab={setActiveTab} />}
+                        {activeTab === 'order' && <OrderView data={data} setActiveTab={setActiveTab} />}
+                        {activeTab === 'history' && <HistoryView data={data} />}
+                    </div>
+
+                    {/* Bottom Navigation Bar */}
+                    <div className="fixed bottom-0 w-full bg-white border-t border-slate-200 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
+                        <div className="flex justify-around items-center h-16">
+                            <NavItem icon="fa-solid fa-house" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                            
+                            <div className="relative -top-5">
+                                <button 
+                                    onClick={() => setActiveTab('order')}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform ${activeTab === 'order' ? 'bg-blue-600 scale-110' : 'bg-blue-500'}`}
+                                >
+                                    <i className="fa-solid fa-droplet text-xl"></i>
+                                </button>
+                            </div>
+                            
+                            <NavItem icon="fa-solid fa-clock-rotate-left" label="History" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const NavItem = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${active ? 'text-blue-600' : 'text-slate-400'}`}>
+                <i className={`${icon} text-lg mb-1`}></i>
+                <span className="text-[10px] font-medium">{label}</span>
+            </button>
+        );
+
+        const HomeView = ({ data, setActiveTab }) => {
+            const activeRequests = data.requests.filter(r => r.status_raw !== 'DELIVERED');
+            
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    {/* Balance Card */}
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10"></div>
+                        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-white opacity-10"></div>
+                        
+                        <p className="text-blue-100 text-sm font-medium mb-1 relative z-10">Account Balance</p>
+                        <h2 className="text-3xl font-bold relative z-10">${data.user.balance.toFixed(2)}</h2>
+                        
+                        <div className="mt-6 flex gap-3 relative z-10">
+                            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 text-center" onClick={() => window.location.href='/logout/'}>
+                                <i className="fa-solid fa-arrow-right-from-bracket mr-2"></i> Logout
+                            </button>
+                            <button className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex-1" onClick={() => setActiveTab('order')}>
+                                Order Water
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Active Deliveries */}
+                    <div>
+                        <div className="flex justify-between items-end mb-4">
+                            <h3 className="text-lg font-bold text-slate-800">Active Deliveries</h3>
+                            {activeRequests.length > 0 && <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-full">{activeRequests.length}</span>}
+                        </div>
+                        
+                        {activeRequests.length === 0 ? (
+                            <div className="bg-white rounded-2xl p-8 border border-dashed border-slate-300 text-center flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 text-2xl mb-3">
+                                    <i className="fa-solid fa-glass-water"></i>
+                                </div>
+                                <p className="text-slate-500 font-medium">No active deliveries</p>
+                                <button onClick={() => setActiveTab('order')} className="mt-3 text-blue-600 font-bold text-sm">Order now</button>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {activeRequests.map(req => (
+                                    <div key={req.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-xl">
+                                                <i className="fa-solid fa-truck-fast"></i>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800">{req.volume_liters}L Water</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                                    <span className="text-xs font-semibold text-blue-600">{req.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold text-slate-800">${req.cost.toFixed(2)}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium uppercase">{req.priority}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const OrderView = ({ data, setActiveTab }) => {
+            const [volume, setVolume] = useState(20);
+            const [priority, setPriority] = useState('NORMAL');
+            const [submitting, setSubmitting] = useState(false);
+
+            const pricing = data.pricing;
+            
+            const costCalc = useMemo(() => {
+                let cost = (volume * pricing.price_per_liter) + pricing.delivery_fee;
+                if (priority === 'URGENT') cost += pricing.urgent_surcharge;
+                if (priority === 'CRITICAL') cost += pricing.critical_surcharge;
+                return cost;
+            }, [volume, priority, pricing]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setSubmitting(true);
+                
+                // Form Data emulation since we are replacing the Django form submit
+                const formData = new FormData();
+                formData.append('volume_liters', volume);
+                formData.append('priority', priority);
+                
+                try {
+                    await axios.post('/app/', formData);
+                    // Reload data to show new order
+                    window.location.reload();
+                } catch (err) {
+                    alert('Error placing order. Please try again.');
+                    setSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="animate-fade-in pb-10">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">Order Water</h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Volume Selection */}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                            <label className="block text-sm font-bold text-slate-700 mb-4">Volume (Liters)</label>
+                            <div className="flex justify-between items-center">
+                                <button type="button" onClick={() => setVolume(Math.max(5, volume - 5))} className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                                    <i className="fa-solid fa-minus"></i>
+                                </button>
+                                
+                                <div className="text-center">
+                                    <span className="text-4xl font-black text-blue-600">{volume}</span>
+                                    <span className="text-lg font-bold text-slate-400 ml-1">L</span>
+                                </div>
+                                
+                                <button type="button" onClick={() => setVolume(volume + 5)} className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                                    <i className="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Priority Selection */}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                            <label className="block text-sm font-bold text-slate-700 mb-3">Priority Level</label>
+                            <div className="grid grid-cols-1 gap-3">
+                                <div onClick={() => setPriority('NORMAL')} className={`border-2 rounded-xl p-4 flex items-center gap-3 transition-colors ${priority === 'NORMAL' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${priority === 'NORMAL' ? 'border-blue-500' : 'border-slate-300'}`}>
+                                        {priority === 'NORMAL' && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-slate-800">Normal Delivery</p>
+                                        <p className="text-xs text-slate-500">Standard timeframe</p>
+                                    </div>
+                                    <p className="font-bold text-slate-800">Free</p>
+                                </div>
+                                
+                                <div onClick={() => setPriority('URGENT')} className={`border-2 rounded-xl p-4 flex items-center gap-3 transition-colors ${priority === 'URGENT' ? 'border-amber-500 bg-amber-50' : 'border-slate-100 hover:border-slate-200'}`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${priority === 'URGENT' ? 'border-amber-500' : 'border-slate-300'}`}>
+                                        {priority === 'URGENT' && <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-slate-800">Urgent</p>
+                                        <p className="text-xs text-slate-500">Expedited timeframe</p>
+                                    </div>
+                                    <p className="font-bold text-amber-600">+${pricing.urgent_surcharge}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cost Summary & Submit */}
+                        <div className="bg-slate-800 rounded-2xl p-6 text-white shadow-xl mt-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-slate-300 font-medium">Estimated Total</span>
+                                <span className="text-2xl font-bold">${costCalc.toFixed(2)}</span>
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={submitting}
+                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 flex justify-center items-center gap-2"
+                            >
+                                {submitting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>}
+                                {submitting ? 'Placing Order...' : 'Confirm Request'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+        };
+
+        const HistoryView = ({ data }) => {
+            return (
+                <div className="animate-fade-in pb-10">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">Order History</h2>
+                    
+                    {data.requests.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500">
+                            No past orders found.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {data.requests.map(req => (
+                                <div key={req.id} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 mb-1">{req.created_at}</p>
+                                            <h4 className="font-bold text-slate-800 text-lg">{req.volume_liters}L Delivery</h4>
+                                        </div>
+                                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                                            req.status_raw === 'DELIVERED' ? 'bg-emerald-100 text-emerald-700' :
+                                            req.status_raw === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                            'bg-blue-100 text-blue-700'
+                                        }`}>
+                                            {req.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-2">
+                                        <span className="text-sm font-medium text-slate-500">#{req.id.toString().padStart(4, '0')}</span>
+                                        <span className="font-bold text-slate-800">${req.cost.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registered:', registration.scope);
+                }).catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
