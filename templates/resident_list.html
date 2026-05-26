@@ -23,7 +23,6 @@
                     <th>Phone Number</th>
                     <th>Email Address</th>
                     <th>Home Address</th>
-                    <th style="text-align: right;">Account Balance</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,13 +47,10 @@
                     <td style="color: var(--text-main); padding: 16px 12px; font-size: 14px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ resident.address }}">
                         {{ resident.address|default:"—" }}
                     </td>
-                    <td style="text-align: right; font-weight: 600; color: {% if resident.account_balance > 0 %}#b45309{% else %}#10b981{% endif %}; padding: 16px 12px; font-size: 15px;">
-                        ${{ resident.account_balance }}
-                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 48px;">
+                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 48px;">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.4; margin-bottom: 12px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
                         <br>No residents registered in CASS yet.
                     </td>

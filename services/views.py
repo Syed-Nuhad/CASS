@@ -141,11 +141,6 @@ def driver_mobile_view(request):
                 water_req.status = 'DELIVERED'
                 water_req.save()
                 
-                # Auto-Billing: Update resident's balance using the saved request cost
-                resident = water_req.resident
-                resident.account_balance = float(resident.account_balance) + float(water_req.cost)
-                resident.save()
-                
                 # Inventory Deduction
                 inventory = Inventory.get_inventory()
                 inventory.total_water_liters -= water_req.volume_liters
@@ -155,7 +150,7 @@ def driver_mobile_view(request):
                 send_omnichannel_notification(
                     user=resident,
                     title='Delivery Complete! 💧',
-                    message=f'Your water delivery ({water_req.volume_liters}L) has arrived. ${water_req.cost} was added to your bill.'
+                    message=f'Your water delivery ({water_req.volume_liters}L) has arrived. Please pay ${water_req.cost} via Cash on Delivery.'
                 )
                 
         except WaterRequest.DoesNotExist:
