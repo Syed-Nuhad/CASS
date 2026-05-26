@@ -5,7 +5,7 @@ def get_role_redirect_url(user):
     """
     Returns the appropriate redirect view name based on the user's role.
     """
-    if user.is_superuser or user.role == 'STAFF_DISPATCH':
+    if user.is_superuser or user.role in ('STAFF_DISPATCH', 'ADMIN'):
         return 'dashboard'
     elif user.role == 'STAFF_INVENTORY':
         return 'staff_inventory'
@@ -32,8 +32,8 @@ def role_required(allowed_roles):
             user = request.user
             user_role = getattr(user, 'role', '')
             
-            # Superusers are permitted to access dispatch/admin views (like 'dashboard')
-            is_allowed = user_role in allowed_roles or (user.is_superuser and 'STAFF_DISPATCH' in allowed_roles)
+            # Superusers and ADMIN roles are permitted to access all dashboards
+            is_allowed = user_role in allowed_roles or user.is_superuser or user_role == 'ADMIN'
             
             if not is_allowed:
                 dest = get_role_redirect_url(user)

@@ -6,7 +6,7 @@ from rest_framework import viewsets, permissions
 from .models import WaterRequest, MaintenanceRequest, SystemSettings, Inventory, Expense
 from .serializers import WaterRequestSerializer, MaintenanceRequestSerializer
 
-@role_required(allowed_roles=['STAFF_DISPATCH'])
+@role_required(allowed_roles=['STAFF_DISPATCH', 'ADMIN'])
 def dashboard_view(request):
     water_requests = WaterRequest.objects.all().order_by('-created_at')
     maintenance_requests = MaintenanceRequest.objects.all().order_by('-created_at')
