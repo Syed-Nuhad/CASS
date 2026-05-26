@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block header_title %}Resident Directory{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 12px; flex-wrap: wrap;">
+    <div>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Registered Residents List
+        </h2>
+        <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Monitor and manage profiles of all registered community residents.</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Resident</th>
+                    <th>Phone Number</th>
+                    <th>Email Address</th>
+                    <th>Home Address</th>
+                    <th style="text-align: right;">Account Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for resident in residents %}
+                <tr>
+                    <td style="font-weight: 500; padding: 16px 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">
+                                {{ resident.username|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <div style="font-size: 15px; color: var(--text-main); font-weight: 600;">{{ resident.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-main); padding: 16px 12px; font-size: 14px; font-weight: 500;">
+                        {{ resident.phone_number }}
+                    </td>
+                    <td style="color: var(--text-muted); padding: 16px 12px; font-size: 14px;">
+                        {{ resident.email|default:"—" }}
+                    </td>
+                    <td style="color: var(--text-main); padding: 16px 12px; font-size: 14px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ resident.address }}">
+                        {{ resident.address|default:"—" }}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; color: {% if resident.account_balance > 0 %}#b45309{% else %}#10b981{% endif %}; padding: 16px 12px; font-size: 15px;">
+                        ${{ resident.account_balance }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 48px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.4; margin-bottom: 12px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                        <br>No residents registered in CASS yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from services.views import dashboard_view, resident_mobile_view, driver_mobile_view, service_worker_view, driver_order_detail_view, staff_inventory_view, accounts_dashboard_view, export_financial_pdf_view, mark_notifications_read_view
-from users.views import login_view, register_view, logout_view, driver_login_view, driver_register_view, staff_login_view, staff_create_view, staff_list_view
+from users.views import login_view, register_view, logout_view, driver_login_view, driver_register_view, staff_login_view, staff_create_view, staff_list_view, resident_list_view
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -28,6 +28,7 @@ urlpatterns = [
     path('staff/login/', staff_login_view, name='staff_login'),
     path('staff/create/', staff_create_view, name='staff_create'),
     path('staff/list/', staff_list_view, name='staff_list'),
+    path('staff/residents/', resident_list_view, name='resident_list'),
     path('staff/inventory/', staff_inventory_view, name='staff_inventory'),
     path('staff/accounts/', accounts_dashboard_view, name='accounts_dashboard'),
     path('staff/accounts/export/', export_financial_pdf_view, name='export_financial_pdf'),

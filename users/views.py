@@ -239,3 +239,13 @@ def staff_list_view(request):
         'staff_members': staff_members,
         'total_payroll': total_payroll
     })
+
+
+@role_required(allowed_roles=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN'])
+def resident_list_view(request):
+    """View to list all community residents and their profile details."""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    # Fetch all residents
+    residents = User.objects.filter(role='RESIDENT').order_by('username')
+    return render(request, 'resident_list.html', {'residents': residents})
