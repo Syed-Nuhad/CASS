@@ -7,14 +7,9 @@
 {% block content %}
 <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap;">
     {% if user.role == 'ADMIN' or user.is_superuser %}
-    <a href="{% url 'driver_register' %}" style="background: rgba(255, 255, 255, 0.1); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        Create Driver Account
-    </a>
-
     <a href="{% url 'staff_create' %}" style="background: rgba(255, 255, 255, 0.1); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-        Create Staff Account
+        Create Staff & Driver Account
     </a>
     {% endif %}
 </div>
