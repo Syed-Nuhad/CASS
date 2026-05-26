@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block header_title %}Staff & Drivers Directory{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 12px; flex-wrap: wrap;">
+    <div>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Active Organization Directory
+        </h2>
+        <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Manage and monitor all internal staff and field delivery partners.</div>
+    </div>
+    
+    {% if user.role == 'ADMIN' or user.is_superuser %}
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="{% url 'driver_register' %}" style="background: rgba(255, 255, 255, 0.1); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Add Driver
+        </a>
+        <a href="{% url 'staff_create' %}" style="background: var(--primary); color: white; border: none; text-decoration: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(25, 25, 112, 0.15); transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            Add Staff
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Designation</th>
+                    <th>Phone Number</th>
+                    <th>Email Address</th>
+                    {% if user.role == 'ADMIN' or user.role == 'STAFF_ACCOUNTS' or user.is_superuser %}
+                    <th style="text-align: right;">Monthly Salary</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_members %}
+                <tr>
+                    <td style="font-weight: 500; padding: 16px 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 10px; background: {% if staff.role == 'DRIVER' %}rgba(56, 189, 248, 0.15){% else %}rgba(25, 25, 112, 0.1){% endif %}; color: {% if staff.role == 'DRIVER' %}#0369a1{% else %}var(--primary){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">
+                                {{ staff.username|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <div style="font-size: 15px; color: var(--text-main); font-weight: 600;">{{ staff.username }}</div>
+                                {% if staff.is_superuser %}
+                                <div style="font-size: 11px; color: #10b981; font-weight: 600; text-transform: uppercase; margin-top: 1px;">Superuser</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 16px 12px;">
+                        <span style="font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: 600; 
+                            {% if staff.role == 'DRIVER' %}
+                                background: rgba(56, 189, 248, 0.12); color: #0284c7;
+                            {% elif staff.role == 'ADMIN' %}
+                                background: rgba(239, 68, 68, 0.1); color: #dc2626;
+                            {% else %}
+                                background: rgba(25, 25, 112, 0.08); color: var(--primary);
+                            {% endif %}">
+                            {{ staff.get_role_display }}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-main); padding: 16px 12px; font-size: 14px;">{{ staff.designation|default:"—" }}</td>
+                    <td style="color: var(--text-muted); padding: 16px 12px; font-size: 14px;">{{ staff.phone_number|default:"—" }}</td>
+                    <td style="color: var(--text-muted); padding: 16px 12px; font-size: 14px;">{{ staff.email|default:"—" }}</td>
+                    {% if user.role == 'ADMIN' or user.role == 'STAFF_ACCOUNTS' or user.is_superuser %}
+                    <td style="text-align: right; font-weight: 600; color: var(--primary); padding: 16px 12px; font-size: 15px;">
+                        {% if staff.salary %}
+                            ${{ staff.salary }}
+                        {% else %}
+                            <span style="color: var(--text-muted); font-style: italic; font-weight: 400; font-size: 13px;">Unspecified</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 48px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.4; margin-bottom: 12px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <br>No organization members registered yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

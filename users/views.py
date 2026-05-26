@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from services.decorators import role_required
 from .models import User
 
 
@@ -220,3 +221,16 @@ def logout_view(request):
     elif role in ('ADMIN',) or getattr(request.user, 'is_staff', False):
         return redirect('staff_login')
     return redirect('login')
+
+
+@role_required(allowed_roles=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN'])
+def staff_list_view(request):
+    """View to list all staff members and delivery drivers."""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    # Fetch all staff and drivers
+    staff_members = User.objects.filter(
+        role__in=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN', 'DRIVER']
+    ).order_by('role', 'username')
+    
+    return render(request, 'staff_list.html', {'staff_members': staff_members})
