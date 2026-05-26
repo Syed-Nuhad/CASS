@@ -177,6 +177,15 @@ def staff_create_view(request):
         phone_number = request.POST.get('phone_number', '')
 
         staff_role = request.POST.get('staff_role', 'STAFF_DISPATCH')
+        designation = request.POST.get('designation', '')
+        salary_str = request.POST.get('salary', '')
+        
+        salary = None
+        if salary_str:
+            try:
+                salary = float(salary_str)
+            except ValueError:
+                pass
 
         if password != password_confirm:
             messages.error(request, 'Passwords do not match.')
@@ -192,6 +201,8 @@ def staff_create_view(request):
             password=password,
             role=staff_role,
             phone_number=phone_number,
+            designation=designation,
+            salary=salary,
         )
         user.is_staff = False # Explicitly block them from Django DB Admin
         user.save()

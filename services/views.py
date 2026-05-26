@@ -294,6 +294,15 @@ def accounts_dashboard_view(request):
     annual_total_expense = sum(item['expense'] for item in annual_data)
     annual_total_profit = sum(item['profit'] for item in annual_data)
 
+    # Fetch staff members for the payroll directory
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    staff_members = User.objects.filter(
+        role__in=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN']
+    ).order_by('username')
+    
+    total_payroll = sum(s.salary for s in staff_members if s.salary)
+
     context = {
         'monthly_income': monthly_income,
         'monthly_expenses': monthly_expenses,
@@ -305,7 +314,9 @@ def accounts_dashboard_view(request):
         'annual_total_expense': annual_total_expense,
         'annual_total_profit': annual_total_profit,
         'current_year': now.year,
-        'current_month_name': calendar.month_name[now.month]
+        'current_month_name': calendar.month_name[now.month],
+        'staff_members': staff_members,
+        'total_payroll': total_payroll,
     }
     return render(request, 'accounts_dashboard.html', context)
 
