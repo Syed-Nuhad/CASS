@@ -14,9 +14,6 @@ class User(AbstractUser):
     # The user's role in the system
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.RESIDENT)
     
-    # Track the resident's total outstanding bill for water deliveries
-    account_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    
     phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True) # Primarily used for residents
     

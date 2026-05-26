@@ -243,7 +243,7 @@
                             {/* View Contents */}
                             <div className="flex-1 overflow-y-auto premium-scroll pr-1">
                                 {(activeTab === 'order' || activeTab === 'home') && (
-                                    <OrderFormView pricing={data.pricing} balance={data.user.balance} />
+                                    <OrderFormView pricing={data.pricing} />
                                 )}
                                 {activeTab === 'history' && (
                                     <HistoryView requests={pastRequests} />
@@ -342,7 +342,7 @@
 
                         {activeTab === 'order' && (
                             <div className="animate-fade-in pb-10">
-                                <OrderFormView pricing={data.pricing} balance={data.user.balance} />
+                                <OrderFormView pricing={data.pricing} />
                             </div>
                         )}
 
@@ -415,7 +415,7 @@
         };
 
         // SUB-COMPONENT: Order Form View
-        const OrderFormView = ({ pricing, balance }) => {
+        const OrderFormView = ({ pricing }) => {
             const [volume, setVolume] = useState(1000);
             const [priority, setPriority] = useState('NORMAL');
             const [note, setNote] = useState('');

@@ -106,7 +106,6 @@ def resident_mobile_view(request):
     initial_data = {
         'user': {
             'username': request.user.username,
-            'balance': float(request.user.account_balance),
             'logo_url': logo_url,
         },
 
