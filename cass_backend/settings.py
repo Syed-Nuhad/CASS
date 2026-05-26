@@ -132,7 +132,37 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/minute',   # Rate limit for unauthenticated scrapers/attackers
+        'user': '120/minute',  # Rate limit for authenticated users
+    }
 }
+
+# BANK-GRADE SECURITY HARDENING
+# ----------------------------------------------------------------------
+# 1. HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_SECONDS = 31536000  # 1 year (Force browsers to ONLY load via HTTPS)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# 2. Browser Vulnerability & Content Security Protections
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME-type sniffing attacks
+X_FRAME_OPTIONS = 'DENY'            # Prevent Clickjacking (disallow frames entirely)
+
+# 3. Session & CSRF Cookie Hardening (Encrypted/Inaccessible to JS)
+SESSION_COOKIE_SECURE = True        # Send cookie only over encrypted HTTPS
+CSRF_COOKIE_SECURE = True           # Send CSRF cookie only over encrypted HTTPS
+SESSION_COOKIE_HTTPONLY = True      # Cookie inaccessible to client JS (prevents XSS leak)
+CSRF_COOKIE_HTTPONLY = True        # CSRF token inaccessible to client JS (prevents XSS leak)
+SESSION_COOKIE_SAMESITE = 'Strict'  # Mitigate Cross-Site Request Forgery (CSRF)
+CSRF_COOKIE_SAMESITE = 'Strict'
+
+# 4. HTTPS Redirect (Will be fully active in production deployment)
+SECURE_SSL_REDIRECT = False         # Flip to True on production with an active SSL certificate
 
 # Authentication Routing
 LOGIN_URL = '/login/'
