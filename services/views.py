@@ -15,6 +15,15 @@ def dashboard_view(request):
         'water_requests': water_requests,
         'maintenance_requests': maintenance_requests,
     }
+    
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        staff_members = User.objects.filter(
+            role__in=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN']
+        ).order_by('username')
+        context['staff_members'] = staff_members
+        
     return render(request, 'dashboard.html', context)
 
 def service_worker_view(request):

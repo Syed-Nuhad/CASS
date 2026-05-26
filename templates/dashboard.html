@@ -176,6 +176,62 @@
         </div>
 </div>
 
+{% if user.role == 'ADMIN' or user.is_superuser %}
+<div class="card" style="margin-top: 30px; border-left: 4px solid var(--primary);">
+    <h2>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Staff Directory
+    </h2>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Staff Member</th>
+                    <th>Role</th>
+                    <th>Designation</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th style="text-align: right;">Monthly Salary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_members %}
+                <tr>
+                    <td style="font-weight: 500;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 28px; height: 28px; border-radius: 8px; background: #e2e8f0; color: #475569; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;">{{ staff.username|make_list|first|upper }}</div>
+                            {{ staff.username }}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-size: 12px; padding: 4px 8px; border-radius: 6px; background: rgba(25, 25, 112, 0.08); color: var(--primary); font-weight: 600;">
+                            {{ staff.get_role_display }}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-muted);">{{ staff.designation|default:"—" }}</td>
+                    <td style="color: var(--text-muted);">{{ staff.phone_number|default:"—" }}</td>
+                    <td style="color: var(--text-muted);">{{ staff.email|default:"—" }}</td>
+                    <td style="text-align: right; font-weight: 600; color: var(--primary);">
+                        {% if staff.salary %}
+                            ${{ staff.salary }}
+                        {% else %}
+                            <span style="color: var(--text-muted); font-style: italic;">Unspecified</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        No staff accounts registered.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <script>
     // Connect to WebSocket
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
