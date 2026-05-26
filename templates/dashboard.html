@@ -1,4 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap;">
@@ -16,18 +20,7 @@
 </div>
 <div class="card">
 
-    <style>
-        .dash-tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); overflow-x: auto; }
-        .dash-tab { padding: 10px 20px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
-        .dash-tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
-        .row-unread { background: rgba(56, 189, 248, 0.05); }
     
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-    </style>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">

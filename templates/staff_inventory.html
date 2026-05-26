@@ -1,117 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block header_title %}Inventory Control Center{% endblock %}
 
 {% block extra_css %}
-<style>
+    <link rel="stylesheet" href="{% static 'css/staff_inventory.css' %}">
 
-        
-        
-        .container {
-            box-sizing: border-box;
-            max-width: 100%;
-            background: var(--surface-color);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 800px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-        }
-        .header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        h2 {
-            margin: 0 0 8px 0;
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--primary);
-        }
-        p.subtitle {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-        .inventory-box {
-            background: rgba(25, 25, 112, 0.05);
-            border: 1px solid rgba(25, 25, 112, 0.1);
-            border-radius: 20px;
-            padding: 30px 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .inventory-number {
-            font-size: 40px;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0;
-            line-height: 1;
-        }
-        .inventory-label {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            font-weight: 500;
-        }
-        
-        .request-card {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .request-info h3 { margin: 0 0 4px 0; font-size: 18px; color: var(--accent); }
-        .request-info p { margin: 0; color: var(--text-muted); font-size: 14px; }
-        
-        .btn-forward {
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 12px 24px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn-forward:hover { opacity: 0.9; }
-
-        .btn-logout {
-            display: inline-block;
-            padding: 10px 20px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .staff-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(25, 25, 112, 0.1);
-            border: 1px solid rgba(25, 25, 112, 0.2);
-            color: var(--accent);
-            font-size: 12px;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-bottom: 16px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-    
-</style>
 {% endblock %}
 
 {% block content %}

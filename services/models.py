@@ -38,6 +38,24 @@ class WaterRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    def calculate_cost(self):
+        """Calculates the cost based on volume, priority, and active system settings."""
+        settings = SystemSettings.get_settings()
+        base_cost = self.volume_liters * float(settings.price_per_liter)
+        delivery_fee = float(settings.delivery_fee)
+        surcharge = 0.0
+        if self.priority == 'URGENT':
+            surcharge = float(settings.urgent_surcharge)
+        elif self.priority == 'CRITICAL':
+            surcharge = float(settings.critical_surcharge)
+        return base_cost + delivery_fee + surcharge
+
+    def save(self, *args, **kwargs):
+        # Auto-calculate cost before saving if not explicitly set or is 0
+        if not self.cost or self.cost == 0:
+            self.cost = self.calculate_cost()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Water {self.id} - {self.resident.username} - {self.status}"
 
@@ -137,19 +155,31 @@ class SystemSettings(models.Model):
         return f"{status} | ${self.price_per_liter}/L | Delivery +${self.delivery_fee} | Urgent +${self.urgent_surcharge} | Critical +${self.critical_surcharge}"
 
     def save(self, *args, **kwargs):
+        from django.core.cache import cache
         # If this row is being set to active, deactivate all other rows first
         if self.is_active:
             SystemSettings.objects.exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)
+        cache.delete('system_settings')
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        super().delete(*args, **kwargs)
+        cache.delete('system_settings')
 
     @classmethod
     def get_settings(cls):
-        """Return the active pricing row, or fall back to the most recent."""
-        obj = cls.objects.filter(is_active=True).first()
+        """Return the active pricing row, or fall back to the most recent, using Django Cache."""
+        from django.core.cache import cache
+        obj = cache.get('system_settings')
         if obj is None:
-            obj = cls.objects.first()
-        if obj is None:
-            obj = cls.objects.create(is_active=True)
+            obj = cls.objects.filter(is_active=True).first()
+            if obj is None:
+                obj = cls.objects.first()
+            if obj is None:
+                obj = cls.objects.create(is_active=True)
+            # Store in cache for 24 hours
+            cache.set('system_settings', obj, timeout=86400)
         return obj
 
 

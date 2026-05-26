@@ -1,22 +1,13 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from .decorators import role_required
 from .utils import send_omnichannel_notification
 from rest_framework import viewsets, permissions
 from .models import WaterRequest, MaintenanceRequest, SystemSettings, Inventory, Expense
 from .serializers import WaterRequestSerializer, MaintenanceRequestSerializer
 
-@login_required
+@role_required(allowed_roles=['STAFF_DISPATCH'])
 def dashboard_view(request):
-    # Admins and Dispatch Staff can view the dashboard
-    if not request.user.is_superuser and request.user.role != 'STAFF_DISPATCH':
-        if request.user.role == 'STAFF_INVENTORY':
-            return redirect('staff_inventory')
-        elif request.user.role == 'STAFF_ACCOUNTS':
-            return redirect('accounts_dashboard')
-        elif request.user.role == 'DRIVER':
-            return redirect('driver_app')
-        return redirect('resident_app')
-
     water_requests = WaterRequest.objects.all().order_by('-created_at')
     maintenance_requests = MaintenanceRequest.objects.all().order_by('-created_at')
     
@@ -29,42 +20,26 @@ def dashboard_view(request):
 def service_worker_view(request):
     return render(request, 'sw.js', content_type='application/javascript')
 
-@login_required
+@role_required(allowed_roles=['RESIDENT'])
 def resident_mobile_view(request):
-    if request.user.role != 'RESIDENT':
-        if request.user.is_superuser or request.user.role == 'STAFF_DISPATCH':
-            return redirect('dashboard')
-        elif request.user.role == 'STAFF_INVENTORY':
-            return redirect('staff_inventory')
-        elif request.user.role == 'STAFF_ACCOUNTS':
-            return redirect('accounts_dashboard')
-        elif request.user.role == 'DRIVER':
-            return redirect('driver_app')
-
     settings = SystemSettings.get_settings()
 
     if request.method == 'POST':
         priority = request.POST.get('priority', 'NORMAL')
         volume = int(request.POST.get('volume', 1000))
+        note = request.POST.get('note', '')
+        photo = request.FILES.get('photo', None)
 
-        # Calculate cost using company-configured prices
-        base_water_cost = volume * float(settings.price_per_liter)
-        delivery_fee = float(settings.delivery_fee)
-        surcharge = 0
-        if priority == 'URGENT':
-            surcharge = float(settings.urgent_surcharge)
-        elif priority == 'CRITICAL':
-            surcharge = float(settings.critical_surcharge)
-
-        total_cost = base_water_cost + delivery_fee + surcharge
-
+        # Cost calculations are now auto-handled by the WaterRequest model on save()
         water_req = WaterRequest.objects.create(
             resident=request.user,
             volume_liters=volume,
             priority=priority,
             status='PENDING',
-            cost=total_cost
+            note=note,
+            photo=photo
         )
+
         
         # Notify Admins and Inventory Staff
         from django.contrib.auth import get_user_model
@@ -115,11 +90,17 @@ def resident_mobile_view(request):
         } for n in my_notifications
     ]
     
+    logo_url = '/static/CASS_logo.png'
+    if settings and settings.branding_logo:
+        logo_url = settings.branding_logo.url
+
     initial_data = {
         'user': {
             'username': request.user.username,
             'balance': float(request.user.account_balance),
+            'logo_url': logo_url,
         },
+
         'requests': req_data,
         'notifications': notif_data,
         'unread_count': unread_count,
@@ -136,18 +117,8 @@ def resident_mobile_view(request):
         'csrf_token_value': request.META.get('CSRF_COOKIE', ''),
     })
 
-@login_required
+@role_required(allowed_roles=['DRIVER'])
 def driver_mobile_view(request):
-    if request.user.role != 'DRIVER':
-        if request.user.is_superuser or request.user.role == 'STAFF_DISPATCH':
-            return redirect('dashboard')
-        elif request.user.role == 'STAFF_INVENTORY':
-            return redirect('staff_inventory')
-        elif request.user.role == 'STAFF_ACCOUNTS':
-            return redirect('accounts_dashboard')
-        else:
-            return redirect('resident_app')
-
     if request.method == 'POST':
         action = request.POST.get('action')
         req_id = request.POST.get('request_id')
@@ -204,9 +175,19 @@ def driver_mobile_view(request):
         } for r in active_requests
     ]
     
+    logo_url = '/static/CASS_logo.png'
+    try:
+        from services.models import SystemSettings
+        active_settings = SystemSettings.objects.filter(is_active=True).first()
+        if active_settings and active_settings.branding_logo:
+            logo_url = active_settings.branding_logo.url
+    except Exception:
+        pass
+
     initial_data = {
         'user': {
             'username': request.user.username,
+            'logo_url': logo_url,
         },
         'active_requests': req_data
     }
@@ -216,11 +197,8 @@ def driver_mobile_view(request):
         'csrf_token_value': request.META.get('CSRF_COOKIE', ''),
     })
 
-@login_required
+@role_required(allowed_roles=['DRIVER'])
 def driver_order_detail_view(request, pk):
-    if request.user.role != 'DRIVER':
-        return redirect('dashboard')
-        
     try:
         req = WaterRequest.objects.get(id=pk)
     except WaterRequest.DoesNotExist:
@@ -228,11 +206,8 @@ def driver_order_detail_view(request, pk):
         
     return render(request, 'driver_order_detail.html', {'req': req})
 
-@login_required
+@role_required(allowed_roles=['STAFF_INVENTORY'])
 def staff_inventory_view(request):
-    if request.user.role != 'STAFF_INVENTORY' and not request.user.is_superuser:
-        return redirect('login')
-        
     if request.method == 'POST':
         action = request.POST.get('action')
         req_id = request.POST.get('request_id')
@@ -261,13 +236,8 @@ def staff_inventory_view(request):
         'pending_requests': pending_requests
     })
 
-@login_required
+@role_required(allowed_roles=['STAFF_ACCOUNTS'])
 def accounts_dashboard_view(request):
-    if request.user.role != 'STAFF_ACCOUNTS':
-        from django.contrib import messages
-        messages.error(request, 'Access denied. Only accountants are authorized to view this page.')
-        return redirect('login')
-
     if request.method == 'POST':
         amount = request.POST.get('amount')
         description = request.POST.get('description')

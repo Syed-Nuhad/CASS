@@ -1,5 +1,13 @@
-from users.models import User
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cass_backend.settings')
+django.setup()
+
 from django.contrib.auth.hashers import make_password
+from users.models import User
+
+
 
 # Create a test Resident
 resident, created = User.objects.get_or_create(
@@ -31,6 +39,6 @@ if not created:
     driver.role = 'DRIVER'
     driver.save()
 
-print("✅ Test users created successfully!")
+print("Test users created successfully!")
 print("Resident: john_resident / testpass123")
 print("Driver: mike_driver / testpass123")

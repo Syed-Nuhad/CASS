@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cass-cache-v6';
+const CACHE_NAME = 'cass-cache-v7';
 const urlsToCache = [
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap'
 ];

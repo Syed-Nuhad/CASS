@@ -1,20 +1,31 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Resident App</title>
+    <title>CASS Resident Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'Inter', 'sans-serif'],
+                    },
                     colors: {
-                        primary: '#3b82f6',
-                        secondary: '#10b981',
-                        surface: '#ffffff',
-                        background: '#f8fafc',
+                        primary: '#191970',       // Navy / Midnight Blue
+                        accent: '#38bdf8',        // Sky Blue
+                        surface: 'rgba(255, 255, 255, 0.85)',
+                        'brand-bg': '#ECEFF1',
+                    },
+                    borderRadius: {
+                        '3xl': '24px',
                     }
                 }
             }
@@ -34,31 +45,13 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f8fafc;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/react_resident.css' %}">
 </head>
-<body class="overflow-x-hidden antialiased">
-    <!-- Initial Data passed from Django securely -->
+<body class="overflow-x-hidden antialiased text-[#0D0907]">
+    <!-- Initial Data passed securely from Django -->
     <script>
         window.INITIAL_DATA = {{ initial_data_json|safe }};
         window.CSRF_TOKEN = "{{ csrf_token_value }}";
-        
-        // Setup Axios defaults
         axios.defaults.headers.common['X-CSRFToken'] = window.CSRF_TOKEN;
     </script>
 
@@ -67,224 +60,576 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Components
         const App = () => {
-            const [activeTab, setActiveTab] = useState('home');
             const data = window.INITIAL_DATA;
+            const [activeTab, setActiveTab] = useState('home'); // 'home', 'order', 'history', 'notifications'
+            const [width, setWidth] = useState(window.innerWidth);
+            const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+            const [unreadCount, setUnreadCount] = useState(data.unread_count || 0);
+            const [notifications, setNotifications] = useState(data.notifications || []);
 
+            // Track window resize for responsiveness
+            useEffect(() => {
+                const handleResize = () => setWidth(window.innerWidth);
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+            const isDesktop = width >= 1024;
+
+            // Handle read notifications
+            const handleReadNotifications = async () => {
+                if (unreadCount > 0) {
+                    try {
+                        await axios.post('/api/notifications/read/');
+                        setUnreadCount(0);
+                        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                    } catch (err) {
+                        console.error('Failed to mark notifications as read', err);
+                    }
+                }
+            };
+
+            const toggleNotifDropdown = (e) => {
+                e.stopPropagation();
+                setShowNotifDropdown(!showNotifDropdown);
+                if (!showNotifDropdown) {
+                    handleReadNotifications();
+                }
+            };
+
+            useEffect(() => {
+                const closeDropdown = () => setShowNotifDropdown(false);
+                document.addEventListener('click', closeDropdown);
+                return () => document.removeEventListener('click', closeDropdown);
+            }, []);
+
+            const activeRequests = useMemo(() => {
+                return data.requests.filter(r => r.status_raw !== 'DELIVERED' && r.status_raw !== 'CANCELLED');
+            }, [data.requests]);
+
+            const pastRequests = useMemo(() => {
+                return data.requests.filter(r => r.status_raw === 'DELIVERED' || r.status_raw === 'CANCELLED');
+            }, [data.requests]);
+
+            if (isDesktop) {
+                // PREMIUM DUAL COLUMN DESKTOP VIEW
+                return (
+                    <div className="flex h-screen overflow-hidden p-6 gap-6 max-w-7xl mx-auto">
+                        
+                        {/* LEFT COLUMN: Profile, Balance & Live Deliveries */}
+                        <div className="w-[420px] shrink-0 flex flex-col glass-card rounded-[32px] p-6 overflow-hidden">
+                            {/* Brand Header */}
+                            <div className="flex items-center gap-4 mb-6 border-b border-black/5 pb-5">
+                                <img src={data.user.logo_url} alt="CASS Logo" className="h-12 w-12 object-contain" />
+                                <div>
+                                    <h1 className="text-xl font-extrabold text-[#191970] leading-tight">CASS Portal</h1>
+                                    <p className="text-xs font-semibold text-[#64748b] tracking-wider uppercase">Resident Services</p>
+                                </div>
+                            </div>
+
+                            {/* User & Notifications Bell */}
+                            <div className="flex items-center justify-between bg-[#191970]/5 p-4 rounded-2xl mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-[#191970] text-white flex items-center justify-center font-bold text-lg">
+                                        {data.user.username[0].toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-[#64748b] font-medium">Welcome back,</p>
+                                        <h4 className="font-bold text-[#191970]">{data.user.username}</h4>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    {/* Bell Icon with Dropdown */}
+                                    <div className="relative">
+                                        <button 
+                                            onClick={toggleNotifDropdown}
+                                            className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#191970] border border-black/5 transition-all relative"
+                                        >
+                                            <i className="fa-solid fa-bell text-lg"></i>
+                                            {unreadCount > 0 && (
+                                                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                                            )}
+                                        </button>
+
+                                        {/* Dropdown Box */}
+                                        {showNotifDropdown && (
+                                            <div className="absolute right-0 mt-3 w-80 bg-white border border-black/5 rounded-2xl shadow-xl z-50 p-4 max-h-[350px] overflow-y-auto premium-scroll animate-fade-in" onClick={e => e.stopPropagation()}>
+                                                <h4 className="font-bold text-sm text-[#191970] border-b border-black/5 pb-2 mb-2 flex justify-between">
+                                                    <span>Notifications</span>
+                                                    {unreadCount > 0 && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">New</span>}
+                                                </h4>
+                                                {notifications.length === 0 ? (
+                                                    <p className="text-xs text-[#64748b] py-6 text-center">No notifications yet.</p>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {notifications.map(n => (
+                                                            <div key={n.id} className={`p-2.5 rounded-xl text-xs transition-colors ${n.is_read ? 'bg-transparent' : 'bg-blue-50/50'}`}>
+                                                                <p className="font-bold text-[#191970]">{n.title}</p>
+                                                                <p className="text-[#64748b] mt-0.5 leading-relaxed">{n.message}</p>
+                                                                <span className="text-[9px] text-slate-400 mt-1 block">{n.created_at}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Logout */}
+                                    <button 
+                                        onClick={() => window.location.href='/logout/'}
+                                        className="p-2.5 rounded-xl bg-white hover:bg-red-50 text-[#64748b] hover:text-red-500 border border-black/5 transition-all"
+                                        title="Logout"
+                                    >
+                                        <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+
+
+                            {/* Active Deliveries List (Scrollable) */}
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <h3 className="text-xs font-bold text-[#191970] uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Active Orders
+                                </h3>
+                                <div className="flex-1 overflow-y-auto premium-scroll pr-1 space-y-3">
+                                    {activeRequests.length === 0 ? (
+                                        <div className="bg-black/5 rounded-2xl p-6 text-center border border-dashed border-black/10">
+                                            <i className="fa-solid fa-circle-check text-2xl text-[#10b981] mb-2"></i>
+                                            <p className="text-xs font-semibold text-[#191970]">No active requests</p>
+                                            <p className="text-[10px] text-[#64748b] mt-0.5">Need water? Create a request on the right panel.</p>
+                                        </div>
+                                    ) : (
+                                        activeRequests.map(req => (
+                                            <ActiveRequestCard key={req.id} req={req} />
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN: Interactive Tabs (Order Form / History) */}
+                        <div className="flex-1 flex flex-col glass-card rounded-[32px] p-8 overflow-hidden">
+                            {/* Tab Selection */}
+                            <div className="flex border-b border-black/5 pb-4 mb-6 shrink-0">
+                                <button 
+                                    onClick={() => setActiveTab('order')}
+                                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                                        activeTab === 'order' || activeTab === 'home'
+                                        ? 'bg-[#191970] text-white shadow-md' 
+                                        : 'text-[#64748b] hover:text-[#191970] hover:bg-black/5'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-droplet"></i>
+                                    Request Water
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('history')}
+                                    className={`ml-3 px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                                        activeTab === 'history' 
+                                        ? 'bg-[#191970] text-white shadow-md' 
+                                        : 'text-[#64748b] hover:text-[#191970] hover:bg-black/5'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-history"></i>
+                                    Order History ({pastRequests.length})
+                                </button>
+                            </div>
+
+                            {/* View Contents */}
+                            <div className="flex-1 overflow-y-auto premium-scroll pr-1">
+                                {(activeTab === 'order' || activeTab === 'home') && (
+                                    <OrderFormView pricing={data.pricing} balance={data.user.balance} />
+                                )}
+                                {activeTab === 'history' && (
+                                    <HistoryView requests={pastRequests} />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // SLEEK MOBILE VIEW (with bottom navigation)
             return (
-                <div className="flex flex-col h-screen bg-slate-50">
+                <div className="flex flex-col h-screen bg-transparent">
                     {/* Header */}
-                    <div className="bg-white px-6 pt-12 pb-4 shadow-sm flex justify-between items-center z-10 sticky top-0">
-                        <div>
-                            <p className="text-sm text-slate-500 font-medium">Welcome back,</p>
-                            <h1 className="text-xl font-bold text-slate-800">{data.user.username}</h1>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg border border-blue-200">
-                            {data.user.username.charAt(0).toUpperCase()}
-                        </div>
-                    </div>
-
-                    {/* Main Content Scrollable Area */}
-                    <div className="flex-1 overflow-y-auto pb-24 px-4 pt-6 no-scrollbar">
-                        {activeTab === 'home' && <HomeView data={data} setActiveTab={setActiveTab} />}
-                        {activeTab === 'order' && <OrderView data={data} setActiveTab={setActiveTab} />}
-                        {activeTab === 'history' && <HistoryView data={data} />}
-                    </div>
-
-                    {/* Bottom Navigation Bar */}
-                    <div className="fixed bottom-0 w-full bg-white border-t border-slate-200 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
-                        <div className="flex justify-around items-center h-16">
-                            <NavItem icon="fa-solid fa-house" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                    <div className="bg-white/80 backdrop-blur-md px-6 pt-12 pb-6 relative overflow-hidden rounded-b-[32px] border-b border-black/5 shadow-[0_8px_30px_rgba(25,25,112,0.02)] shrink-0">
+                        <div className="flex justify-between items-center relative z-10">
+                            <div className="flex items-center gap-3">
+                                <img src={data.user.logo_url} alt="CASS Logo" className="h-9 w-9 object-contain" />
+                                <div>
+                                    <p className="text-[#191970]/60 text-[10px] font-bold tracking-widest uppercase">CASS Resident</p>
+                                    <h1 className="text-xl font-black text-[#191970]">Hi, {data.user.username}</h1>
+                                </div>
+                            </div>
                             
+                            <div className="flex gap-2">
+                                {/* Bell */}
+                                <div className="relative">
+                                    <button 
+                                        onClick={toggleNotifDropdown}
+                                        className="p-2.5 rounded-xl bg-[#191970]/5 text-[#191970] transition-all relative"
+                                    >
+                                        <i className="fa-solid fa-bell"></i>
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                                        )}
+                                    </button>
+
+                                    {/* Dropdown */}
+                                    {showNotifDropdown && (
+                                        <div className="absolute right-0 mt-3 w-72 bg-white border border-black/5 rounded-2xl shadow-xl z-50 p-4 max-h-[300px] overflow-y-auto premium-scroll animate-fade-in" onClick={e => e.stopPropagation()}>
+                                            <h4 className="font-bold text-xs text-[#191970] border-b border-black/5 pb-2 mb-2">Notifications</h4>
+                                            {notifications.length === 0 ? (
+                                                <p className="text-[11px] text-[#64748b] py-4 text-center">No notifications yet.</p>
+                                            ) : (
+                                                <div className="space-y-2.5">
+                                                    {notifications.map(n => (
+                                                        <div key={n.id} className="p-2 bg-slate-50 rounded-lg text-[11px]">
+                                                            <p className="font-bold text-[#191970]">{n.title}</p>
+                                                            <p className="text-[#64748b] mt-0.5">{n.message}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Logout */}
+                                <button 
+                                    onClick={() => window.location.href='/logout/'}
+                                    className="p-2.5 rounded-xl bg-[#64748b]/10 text-[#64748b] transition-all"
+                                >
+                                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Scrollable Main Area */}
+                    <div className="flex-1 overflow-y-auto pb-24 px-4 pt-6 no-scrollbar">
+                        {activeTab === 'home' && (
+                            <div className="space-y-6 animate-fade-in">
+
+
+                                {/* Active Deliveries Section */}
+                                <div>
+                                    <h3 className="text-sm font-black text-[#191970] uppercase tracking-wider mb-3 px-1">Active Deliveries</h3>
+                                    {activeRequests.length === 0 ? (
+                                        <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 border border-black/5 text-center flex flex-col items-center justify-center">
+                                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-xl mb-2">
+                                                <i className="fa-solid fa-glass-water"></i>
+                                            </div>
+                                            <p className="text-slate-500 font-semibold text-xs">No active deliveries</p>
+                                            <button onClick={() => setActiveTab('order')} className="mt-2 text-xs font-bold text-[#191970] hover:underline">Request now</button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {activeRequests.map(req => (
+                                                <ActiveRequestCard key={req.id} req={req} />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'order' && (
+                            <div className="animate-fade-in pb-10">
+                                <OrderFormView pricing={data.pricing} balance={data.user.balance} />
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="animate-fade-in pb-10">
+                                <h3 className="text-sm font-black text-[#64748b] uppercase tracking-wider mb-4 px-1">Order History</h3>
+                                <HistoryView requests={pastRequests} />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Mobile Tab Bar */}
+                    <div className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-black/5 shadow-[0_-4px_25px_rgba(25,25,112,0.06)] z-20 pb-safe">
+                        <div className="flex justify-around items-center h-16">
+                            <button 
+                                onClick={() => setActiveTab('home')}
+                                className={`flex flex-col items-center justify-center w-20 h-full transition-colors ${activeTab === 'home' ? 'text-[#191970]' : 'text-slate-400'}`}
+                            >
+                                <i className="fa-solid fa-house text-lg mb-1"></i>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Home</span>
+                            </button>
+                            
+                            {/* Central CTA droplet button */}
                             <div className="relative -top-5">
                                 <button 
                                     onClick={() => setActiveTab('order')}
-                                    className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform ${activeTab === 'order' ? 'bg-blue-600 scale-110' : 'bg-blue-500'}`}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform ${activeTab === 'order' ? 'bg-[#38bdf8] scale-110' : 'bg-[#191970]'}`}
                                 >
                                     <i className="fa-solid fa-droplet text-xl"></i>
                                 </button>
                             </div>
                             
-                            <NavItem icon="fa-solid fa-clock-rotate-left" label="History" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+                            <button 
+                                onClick={() => setActiveTab('history')}
+                                className={`flex flex-col items-center justify-center w-20 h-full transition-colors ${activeTab === 'history' ? 'text-[#191970]' : 'text-slate-400'}`}
+                            >
+                                <i className="fa-solid fa-clock-rotate-left text-lg mb-1"></i>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">History</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const NavItem = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${active ? 'text-blue-600' : 'text-slate-400'}`}>
-                <i className={`${icon} text-lg mb-1`}></i>
-                <span className="text-[10px] font-medium">{label}</span>
-            </button>
-        );
-
-        const HomeView = ({ data, setActiveTab }) => {
-            const activeRequests = data.requests.filter(r => r.status_raw !== 'DELIVERED');
-            
+        // SUB-COMPONENT: Active Request Card
+        const ActiveRequestCard = ({ req }) => {
+            const isDelivering = req.status_raw === 'ON_THE_WAY';
+            const isForwarded = req.status_raw === 'FORWARDED';
             return (
-                <div className="space-y-6 animate-fade-in">
-                    {/* Balance Card */}
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10"></div>
-                        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-white opacity-10"></div>
-                        
-                        <p className="text-blue-100 text-sm font-medium mb-1 relative z-10">Account Balance</p>
-                        <h2 className="text-3xl font-bold relative z-10">${data.user.balance.toFixed(2)}</h2>
-                        
-                        <div className="mt-6 flex gap-3 relative z-10">
-                            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 text-center" onClick={() => window.location.href='/logout/'}>
-                                <i className="fa-solid fa-arrow-right-from-bracket mr-2"></i> Logout
-                            </button>
-                            <button className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex-1" onClick={() => setActiveTab('order')}>
-                                Order Water
-                            </button>
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-black/5 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#191970]/5 text-[#191970] flex items-center justify-center text-lg">
+                            <i className="fa-solid fa-truck-fast"></i>
+                        </div>
+                        <div>
+                            <p className="font-bold text-sm text-[#191970]">{req.volume_liters}L Delivery</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isDelivering ? 'bg-emerald-500 animate-pulse' : isForwarded ? 'bg-[#38bdf8]' : 'bg-amber-500 animate-pulse'}`}></span>
+                                <span className="text-[11px] font-bold text-slate-500 uppercase">{req.status}</span>
+                            </div>
                         </div>
                     </div>
-
-                    {/* Active Deliveries */}
-                    <div>
-                        <div className="flex justify-between items-end mb-4">
-                            <h3 className="text-lg font-bold text-slate-800">Active Deliveries</h3>
-                            {activeRequests.length > 0 && <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded-full">{activeRequests.length}</span>}
-                        </div>
-                        
-                        {activeRequests.length === 0 ? (
-                            <div className="bg-white rounded-2xl p-8 border border-dashed border-slate-300 text-center flex flex-col items-center justify-center">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 text-2xl mb-3">
-                                    <i className="fa-solid fa-glass-water"></i>
-                                </div>
-                                <p className="text-slate-500 font-medium">No active deliveries</p>
-                                <button onClick={() => setActiveTab('order')} className="mt-3 text-blue-600 font-bold text-sm">Order now</button>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {activeRequests.map(req => (
-                                    <div key={req.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-xl">
-                                                <i className="fa-solid fa-truck-fast"></i>
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-800">{req.volume_liters}L Water</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                                                    <span className="text-xs font-semibold text-blue-600">{req.status}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-bold text-slate-800">${req.cost.toFixed(2)}</p>
-                                            <p className="text-[10px] text-slate-400 font-medium uppercase">{req.priority}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                    <div className="text-right">
+                        <p className="text-sm font-extrabold text-[#191970]">${req.cost.toFixed(2)}</p>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">{req.priority}</span>
                     </div>
                 </div>
             );
         };
 
-        const OrderView = ({ data, setActiveTab }) => {
-            const [volume, setVolume] = useState(20);
+        // SUB-COMPONENT: Order Form View
+        const OrderFormView = ({ pricing, balance }) => {
+            const [volume, setVolume] = useState(1000);
             const [priority, setPriority] = useState('NORMAL');
+            const [note, setNote] = useState('');
+            const [photoFile, setPhotoFile] = useState(null);
             const [submitting, setSubmitting] = useState(false);
 
-            const pricing = data.pricing;
-            
+            // Compute Estimated Pricing
             const costCalc = useMemo(() => {
-                let cost = (volume * pricing.price_per_liter) + pricing.delivery_fee;
+                const volNum = Number(volume) || 0;
+                let cost = (volNum * pricing.price_per_liter) + pricing.delivery_fee;
                 if (priority === 'URGENT') cost += pricing.urgent_surcharge;
                 if (priority === 'CRITICAL') cost += pricing.critical_surcharge;
                 return cost;
             }, [volume, priority, pricing]);
 
+
+            const handleFileChange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    setPhotoFile(e.target.files[0]);
+                }
+            };
+
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setSubmitting(true);
-                
-                // Form Data emulation since we are replacing the Django form submit
+
+                // Build multipart/form-data for Axios
                 const formData = new FormData();
-                formData.append('volume_liters', volume);
+                formData.append('volume', volume); // Needs to match Django request.POST.get('volume')
                 formData.append('priority', priority);
-                
+                formData.append('note', note);
+                if (photoFile) {
+                    formData.append('photo', photoFile);
+                }
+
                 try {
-                    await axios.post('/app/', formData);
-                    // Reload data to show new order
+                    await axios.post('/app/', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
                     window.location.reload();
                 } catch (err) {
-                    alert('Error placing order. Please try again.');
+                    alert('Logistics dispatch failed. Please check network and try again.');
                     setSubmitting(false);
                 }
             };
 
             return (
-                <div className="animate-fade-in pb-10">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6">Order Water</h2>
-                    
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Volume Selection */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                            <label className="block text-sm font-bold text-slate-700 mb-4">Volume (Liters)</label>
-                            <div className="flex justify-between items-center">
-                                <button type="button" onClick={() => setVolume(Math.max(5, volume - 5))} className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                <div className="space-y-6">
+                    <div>
+                        <h2 className="text-2xl font-black text-[#191970]">Request Water Delivery</h2>
+                        <p className="text-xs text-[#64748b] mt-1 font-medium">Configure volume & emergency priority levels. Payment is collected in cash by the driver upon delivery.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        
+                        {/* Volume Selection Card */}
+                        <div className="bg-white/85 rounded-3xl p-5 border border-black/5 shadow-sm space-y-4">
+                            <label className="block text-xs font-bold text-[#191970] uppercase tracking-wider">Volume required (Liters)</label>
+                            
+                            <div className="flex justify-between items-center py-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setVolume(Math.max(1, (Number(volume) || 1000) - 100))} 
+                                    className="w-12 h-12 rounded-2xl bg-[#191970]/5 hover:bg-[#191970]/10 text-[#191970] flex items-center justify-center text-lg transition-all"
+                                >
                                     <i className="fa-solid fa-minus"></i>
                                 </button>
                                 
-                                <div className="text-center">
-                                    <span className="text-4xl font-black text-blue-600">{volume}</span>
-                                    <span className="text-lg font-bold text-slate-400 ml-1">L</span>
+                                <div className="text-center flex items-center justify-center">
+                                    <input 
+                                        type="number"
+                                        value={volume}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setVolume(val === '' ? '' : Number(val));
+                                        }}
+                                        onBlur={() => {
+                                            if (volume === '' || volume < 1) setVolume(100);
+                                            // Removed arbitrary max limit of 5000 so resident can type any amount
+                                        }}
+                                        min="1"
+                                        className="text-4xl font-black text-[#191970] bg-transparent border-b-2 border-transparent hover:border-[#191970]/20 focus:border-[#191970] focus:outline-none w-32 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-sans"
+                                    />
+                                    <span className="text-lg font-bold text-[#64748b] ml-1">L</span>
                                 </div>
                                 
-                                <button type="button" onClick={() => setVolume(volume + 5)} className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setVolume((Number(volume) || 1000) + 100)} 
+                                    className="w-12 h-12 rounded-2xl bg-[#191970]/5 hover:bg-[#191970]/10 text-[#191970] flex items-center justify-center text-lg transition-all"
+                                >
                                     <i className="fa-solid fa-plus"></i>
                                 </button>
                             </div>
+
+                            {/* Preset Buttons */}
+                            <div className="grid grid-cols-4 gap-2 pt-2 border-t border-black/5">
+                                {[500, 1000, 2000, 3000].map(v => (
+                                    <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => setVolume(v)}
+                                        className={`py-2 rounded-xl text-xs font-bold transition-all ${
+                                            volume === v 
+                                            ? 'bg-[#191970] text-white' 
+                                            : 'bg-black/5 text-[#64748b] hover:bg-black/10'
+                                        }`}
+                                    >
+                                        {v}L
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Priority Selection */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                            <label className="block text-sm font-bold text-slate-700 mb-3">Priority Level</label>
-                            <div className="grid grid-cols-1 gap-3">
-                                <div onClick={() => setPriority('NORMAL')} className={`border-2 rounded-xl p-4 flex items-center gap-3 transition-colors ${priority === 'NORMAL' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${priority === 'NORMAL' ? 'border-blue-500' : 'border-slate-300'}`}>
-                                        {priority === 'NORMAL' && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-slate-800">Normal Delivery</p>
-                                        <p className="text-xs text-slate-500">Standard timeframe</p>
-                                    </div>
-                                    <p className="font-bold text-slate-800">Free</p>
-                                </div>
+                        {/* Priority Selector */}
+                        <div className="bg-white/85 rounded-3xl p-5 border border-black/5 shadow-sm space-y-3">
+                            <label className="block text-xs font-bold text-[#191970] uppercase tracking-wider">Priority / emergency level</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 
-                                <div onClick={() => setPriority('URGENT')} className={`border-2 rounded-xl p-4 flex items-center gap-3 transition-colors ${priority === 'URGENT' ? 'border-amber-500 bg-amber-50' : 'border-slate-100 hover:border-slate-200'}`}>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${priority === 'URGENT' ? 'border-amber-500' : 'border-slate-300'}`}>
-                                        {priority === 'URGENT' && <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>}
+                                {/* Normal */}
+                                <div 
+                                    onClick={() => setPriority('NORMAL')}
+                                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex md:flex-col justify-between items-center ${
+                                        priority === 'NORMAL' 
+                                        ? 'border-[#191970] bg-[#191970]/5' 
+                                        : 'border-black/5 hover:border-black/10 bg-transparent'
+                                    }`}
+                                >
+                                    <div className="text-left md:text-center">
+                                        <p className="font-bold text-sm text-[#191970]">Normal</p>
+                                        <p className="text-[10px] text-slate-500 mt-0.5">Within 48 hours</p>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-slate-800">Urgent</p>
-                                        <p className="text-xs text-slate-500">Expedited timeframe</p>
-                                    </div>
-                                    <p className="font-bold text-amber-600">+${pricing.urgent_surcharge}</p>
+                                    <span className="text-xs font-extrabold text-[#191970] mt-0 md:mt-2">Free Delivery</span>
                                 </div>
+
+                                {/* Urgent */}
+                                <div 
+                                    onClick={() => setPriority('URGENT')}
+                                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex md:flex-col justify-between items-center ${
+                                        priority === 'URGENT' 
+                                        ? 'border-amber-500 bg-amber-50' 
+                                        : 'border-black/5 hover:border-black/10 bg-transparent'
+                                    }`}
+                                >
+                                    <div className="text-left md:text-center">
+                                        <p className="font-bold text-sm text-amber-700">Urgent</p>
+                                        <p className="text-[10px] text-slate-500 mt-0.5">Within 24 hours</p>
+                                    </div>
+                                    <span className="text-xs font-extrabold text-amber-600 mt-0 md:mt-2">+${pricing.urgent_surcharge}</span>
+                                </div>
+
+                                {/* Critical */}
+                                <div 
+                                    onClick={() => setPriority('CRITICAL')}
+                                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex md:flex-col justify-between items-center ${
+                                        priority === 'CRITICAL' 
+                                        ? 'border-red-500 bg-red-50' 
+                                        : 'border-black/5 hover:border-black/10 bg-transparent'
+                                    }`}
+                                >
+                                    <div className="text-left md:text-center">
+                                        <p className="font-bold text-sm text-red-700">Critical</p>
+                                        <p className="text-[10px] text-slate-500 mt-0.5">Emergency/ASAP</p>
+                                    </div>
+                                    <span className="text-xs font-extrabold text-red-600 mt-0 md:mt-2">+${pricing.critical_surcharge}</span>
+                                </div>
+
                             </div>
                         </div>
 
-                        {/* Cost Summary & Submit */}
-                        <div className="bg-slate-800 rounded-2xl p-6 text-white shadow-xl mt-8">
-                            <div className="flex justify-between items-center mb-4">
-                                <span className="text-slate-300 font-medium">Estimated Total</span>
-                                <span className="text-2xl font-bold">${costCalc.toFixed(2)}</span>
+                        {/* Optional Info Box */}
+                        <div className="bg-white/85 rounded-3xl p-5 border border-black/5 shadow-sm space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-[#191970] uppercase tracking-wider mb-2">Driver Instructions (Optional)</label>
+                                <textarea
+                                    value={note}
+                                    onChange={e => setNote(e.target.value)}
+                                    placeholder="Add codes, property entry info, or location notes..."
+                                    rows="2"
+                                    className="w-full bg-slate-100 border border-black/5 rounded-2xl p-3 text-sm focus:outline-none focus:border-[#191970]"
+                                />
                             </div>
-                            <button 
-                                type="submit" 
+
+                            <div>
+                                <label className="block text-xs font-bold text-[#191970] uppercase tracking-wider mb-2">Optional Photo (Water tank reference)</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#191970]/5 file:text-[#191970] hover:file:bg-[#191970]/10"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Financial Ledger Breakdown & submit */}
+                        <div className="bg-[#191970] rounded-3xl p-6 text-white shadow-xl space-y-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 rounded-full bg-white opacity-[0.03]"></div>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-white/60 text-xs font-bold uppercase tracking-wider">Estimated Total</span>
+                                    <p className="text-xs text-white/50 mt-0.5 font-medium">Includes delivery & priority surcharges</p>
+                                </div>
+                                <span className="text-3xl font-black text-[#38bdf8]">${costCalc.toFixed(2)}</span>
+                            </div>
+                            
+                            <button
+                                type="submit"
                                 disabled={submitting}
-                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 flex justify-center items-center gap-2"
+                                className="w-full bg-[#38bdf8] hover:bg-[#0ea5e9] text-[#191970] font-extrabold py-4 rounded-2xl shadow-md transition-all flex justify-center items-center gap-2 transform active:scale-[0.98]"
                             >
-                                {submitting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>}
-                                {submitting ? 'Placing Order...' : 'Confirm Request'}
+                                {submitting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
+                                {submitting ? 'Placing Request...' : 'Dispatch Water Order'}
                             </button>
                         </div>
                     </form>
@@ -292,57 +637,50 @@
             );
         };
 
-        const HistoryView = ({ data }) => {
+        // SUB-COMPONENT: History View
+        const HistoryView = ({ requests }) => {
+            if (requests.length === 0) {
+                return (
+                    <div className="text-center py-12 bg-white/70 backdrop-blur-md rounded-3xl border border-black/5 p-8">
+                        <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 text-xl mx-auto mb-3">
+                            <i className="fa-solid fa-history"></i>
+                        </div>
+                        <p className="font-bold text-[#191970] text-sm">No completed requests</p>
+                        <p className="text-xs text-[#64748b] mt-1">Once you receive deliveries, they will list here as billing invoices.</p>
+                    </div>
+                );
+            }
+
             return (
-                <div className="animate-fade-in pb-10">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6">Order History</h2>
-                    
-                    {data.requests.length === 0 ? (
-                        <div className="text-center py-10 text-slate-500">
-                            No past orders found.
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {data.requests.map(req => (
-                                <div key={req.id} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 mb-1">{req.created_at}</p>
-                                            <h4 className="font-bold text-slate-800 text-lg">{req.volume_liters}L Delivery</h4>
-                                        </div>
-                                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                                            req.status_raw === 'DELIVERED' ? 'bg-emerald-100 text-emerald-700' :
-                                            req.status_raw === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-blue-100 text-blue-700'
-                                        }`}>
-                                            {req.status}
-                                        </span>
+                <div className="space-y-4">
+                    {requests.map(req => {
+                        const isDelivered = req.status_raw === 'DELIVERED';
+                        return (
+                            <div key={req.id} className="bg-white/95 backdrop-blur-md rounded-2xl p-5 border border-black/5 shadow-sm space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">{req.created_at}</p>
+                                        <h4 className="font-extrabold text-sm text-[#191970] mt-0.5">{req.volume_liters}L Water Delivery</h4>
                                     </div>
-                                    <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-2">
-                                        <span className="text-sm font-medium text-slate-500">#{req.id.toString().padStart(4, '0')}</span>
-                                        <span className="font-bold text-slate-800">${req.cost.toFixed(2)}</span>
-                                    </div>
+                                    <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase ${
+                                        isDelivered ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                        {req.status}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                                <div className="flex justify-between items-center pt-3 border-t border-black/5 text-xs">
+                                    <span className="font-semibold text-slate-400">Order ID: #{req.id.toString().padStart(4, '0')}</span>
+                                    <span className="font-black text-[#191970]">${req.cost.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(registration => {
-                    console.log('ServiceWorker registered:', registration.scope);
-                }).catch(error => {
-                    console.log('ServiceWorker registration failed:', error);
-                });
-            });
-        }
     </script>
 </body>
 </html>
