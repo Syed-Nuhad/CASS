@@ -233,4 +233,9 @@ def staff_list_view(request):
         role__in=['STAFF_DISPATCH', 'STAFF_INVENTORY', 'STAFF_ACCOUNTS', 'ADMIN', 'DRIVER']
     ).order_by('role', 'username')
     
-    return render(request, 'staff_list.html', {'staff_members': staff_members})
+    total_payroll = sum(s.salary for s in staff_members if s.salary)
+    
+    return render(request, 'staff_list.html', {
+        'staff_members': staff_members,
+        'total_payroll': total_payroll
+    })
