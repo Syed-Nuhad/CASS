@@ -6,10 +6,10 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-import app_secrets
+from django.conf import settings
 
 urlpatterns = [
-    path(app_secrets.ADMIN_URL_PATH, admin.site.urls),
+    path(settings.ADMIN_URL_PATH, admin.site.urls),
     path('webpush/', include('webpush.urls')),
     path('api/services/', include('services.urls')),
     path('alerts/', include('alerts.urls')),
@@ -35,7 +35,6 @@ urlpatterns = [
     path('', dashboard_view, name='dashboard'),
 ]
 
-from django.conf import settings
 from django.conf.urls.static import static
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
