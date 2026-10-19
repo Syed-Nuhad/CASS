@@ -141,7 +141,7 @@
 
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script id="driver-jsx" type="text/plain">
         const { useState, useEffect } = React;
 
         const App = () => {
@@ -681,6 +681,19 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+    </script>
+    <script>
+        (function() {
+            try {
+                var code = document.getElementById('driver-jsx').innerText;
+                var compiled = Babel.transform(code, {
+                    presets: [['react', { runtime: 'classic' }]]
+                }).code;
+                eval(compiled);
+            } catch (e) {
+                console.error('Driver bootstrapper error:', e);
+            }
+        })();
     </script>
     <script>
         if ('serviceWorker' in navigator) {

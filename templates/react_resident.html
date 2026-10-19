@@ -136,7 +136,7 @@
 
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script id="resident-jsx" type="text/plain">
         const { useState, useEffect, useMemo } = React;
 
         const App = () => {
@@ -766,6 +766,19 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+    </script>
+    <script>
+        (function() {
+            try {
+                var code = document.getElementById('resident-jsx').innerText;
+                var compiled = Babel.transform(code, {
+                    presets: [['react', { runtime: 'classic' }]]
+                }).code;
+                eval(compiled);
+            } catch (e) {
+                console.error('Bootstrapper error:', e);
+            }
+        })();
     </script>
 </body>
 </html>
