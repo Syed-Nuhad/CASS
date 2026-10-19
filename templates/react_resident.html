@@ -4,7 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Secure Django Dealership Management System | FMCG Distributor ERP</title>
+    <title>CASS | Resident Portal</title>
+    {% if system_settings and system_settings.branding_logo %}
+    <link rel="icon" type="image/png" href="{{ system_settings.branding_logo.url }}">
+    {% else %}
+    <link rel="icon" type="image/png" href="{% static 'CASS_logo.png' %}">
+    {% endif %}
     <meta name="description" content="An enterprise-grade, highly secure Django 6.0 Dealership Management System (DMS) tailored for FMCG distributors. Features dynamic Debt Aging Analytics, real-time sales heatmaps, double-entry accounting, and robust hardware device guards. Request a secure private demo.">
     <meta name="keywords" content="Secure Django Dealership Management System, FMCG Distributor ERP Software with Debt Aging Analytics, Wholesale Distribution Software, Intelligent DMS, Account Ledger ERP, Retailer B2B Portal">
     <meta name="robots" content="index, follow">
