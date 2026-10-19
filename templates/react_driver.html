@@ -195,7 +195,7 @@
 
             if (isDesktop) {
                 // Desktop Dual Column Layout
-                const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED');
+                const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED' || r.status_raw === 'PENDING');
                 const onTheWay = data.active_requests.filter(r => r.status_raw === 'ON_THE_WAY');
 
                 return (
@@ -340,7 +340,7 @@
         };
 
         const ListView = ({ data, onOrderClick, setView }) => {
-            const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED');
+            const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED' || r.status_raw === 'PENDING');
             const onTheWay = data.active_requests.filter(r => r.status_raw === 'ON_THE_WAY');
 
             return (
