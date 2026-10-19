@@ -8,6 +8,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
 
+# Use PyMySQL as a fallback for MySQLdb on cPanel
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-development-only-!!!')
 
@@ -27,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third party apps
+    'axes',
     'rest_framework',
     'rest_framework_simplejwt',
     'channels',
@@ -39,15 +47,37 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'services.middleware.DynamicSecurityBypassMiddleware',
+    'services.middleware.HoneypotMiddleware',
+    'services.middleware.ApplicationWAFMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'services.middleware.OriginLockdownMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'services.middleware.SessionTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
+    'services.middleware.IPSessionLockMiddleware',
+    'services.middleware.SecurityHeadersMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# AXES Configuration
+AXES_ENABLED = False
+AXES_FAILURE_LIMIT = 50
+AXES_COOLOFF_TIME = 1  # 1 hour
+AXES_LOCKOUT_TEMPLATE = None # will return 403 by default
+AXES_RESET_ON_SUCCESS = True
+AXES_NEVER_LOCKOUT_WHITELIST = True
+AXES_IP_WHITELIST = ['127.0.0.1', 'localhost', '::1']
 
 ROOT_URLCONF = 'cass_backend.urls'
 
@@ -70,26 +100,36 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cass_backend.wsgi.application'
 ASGI_APPLICATION = 'cass_backend.asgi.application'
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [("127.0.0.1", 6379)],
+#         },
+#     },
+# }
+
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }
 
 DATABASES = {
     'default': {
         'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3'),
         'NAME': BASE_DIR / os.environ.get('DB_NAME', 'db.sqlite3') if os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3') == 'django.db.backends.sqlite3' else os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER', ''),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', ''),
     }
 }
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
@@ -131,9 +171,19 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Email Configuration (Mocked for development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@cass-system.com'
+# Email Configuration (Supports Brevo SMTP or console fallback)
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp-relay.brevo.com')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+else:
+    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@cass.mentosh.top')
 
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": os.environ.get("VAPID_PUBLIC_KEY", "BBEb2fP6rP-O44K4wFz_Bf79tO70Y4bN9hPZg6oWcPxO4-vO_cZ1qD24YvIIf0aD_v4Mv5s8lY_E4f2-tA4I1J4"),
@@ -158,8 +208,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '60/minute',   # Rate limit for unauthenticated scrapers/attackers
-        'user': '120/minute',  # Rate limit for authenticated users
+        'anon': '20/minute',   # Rate limit for unauthenticated scrapers/attackers
+        'user': '100/minute',  # Rate limit for authenticated users
     }
 }
 
@@ -175,15 +225,23 @@ SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME-type sniffing attacks
 X_FRAME_OPTIONS = 'DENY'            # Prevent Clickjacking (disallow frames entirely)
 
 # 3. Session & CSRF Cookie Hardening (Encrypted/Inaccessible to JS)
-SESSION_COOKIE_SECURE = True        # Send cookie only over encrypted HTTPS
-CSRF_COOKIE_SECURE = True           # Send CSRF cookie only over encrypted HTTPS
+SESSION_COOKIE_SECURE = not DEBUG        # Send cookie only over encrypted HTTPS
+CSRF_COOKIE_SECURE = not DEBUG           # Send CSRF cookie only over encrypted HTTPS
 SESSION_COOKIE_HTTPONLY = True      # Cookie inaccessible to client JS (prevents XSS leak)
 CSRF_COOKIE_HTTPONLY = True        # CSRF token inaccessible to client JS (prevents XSS leak)
-SESSION_COOKIE_SAMESITE = 'Strict'  # Mitigate Cross-Site Request Forgery (CSRF)
-CSRF_COOKIE_SAMESITE = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Lax'     # Mitigate Cross-Site Request Forgery (CSRF)
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # 4. HTTPS Redirect (Will be fully active in production deployment)
 SECURE_SSL_REDIRECT = False         # Flip to True on production with an active SSL certificate
+
+# 5. Trusted Origins for CSRF verification (required for cPanel HTTPS)
+CSRF_TRUSTED_ORIGINS = [
+    'https://cass.mentosh.top',
+    'http://cass.mentosh.top',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
 
 # Authentication Routing
 LOGIN_URL = '/login/'
