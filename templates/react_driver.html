@@ -4,7 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Driver App - CASS</title>
+    <title>Secure Django Dealership Management System | FMCG Distributor ERP</title>
+    <meta name="description" content="An enterprise-grade, highly secure Django 6.0 Dealership Management System (DMS) tailored for FMCG distributors. Features dynamic Debt Aging Analytics, real-time sales heatmaps, double-entry accounting, and robust hardware device guards. Request a secure private demo.">
+    <meta name="keywords" content="Secure Django Dealership Management System, FMCG Distributor ERP Software with Debt Aging Analytics, Wholesale Distribution Software, Intelligent DMS, Account Ledger ERP, Retailer B2B Portal">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Secure Django Dealership Management System | FMCG Distributor ERP">
+    <meta property="og:description" content="Institutional-grade distribution ecosystem with AI shortage forecasting, automated payroll, and multi-layer device session locking. Built for modern FMCG grids.">
+    <meta property="og:image" content="images/dashboard-preview.jpg">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Secure Django Dealership Management System | FMCG Distributor ERP">
+    <meta property="twitter:description" content="Institutional-grade distribution ecosystem with AI shortage forecasting, automated payroll, and multi-layer device session locking. Built for modern FMCG grids.">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -37,13 +48,85 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
     <!-- Babel (for JSX) -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
+    <script>
+        // Global Rate Limit Interceptor with Premium Toast
+        function showRateLimitToast(retryAfter) {
+            let toast = document.getElementById('rate-limit-toast');
+            if (toast) {
+                toast.remove();
+            }
+            
+            toast = document.createElement('div');
+            toast.id = 'rate-limit-toast';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '32px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = 'rgba(239, 68, 68, 0.95)';
+            toast.style.backdropFilter = 'blur(8px)';
+            toast.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+            toast.style.color = '#ffffff';
+            toast.style.padding = '14px 28px';
+            toast.style.borderRadius = '16px';
+            toast.style.boxShadow = '0 20px 25px -5px rgba(239, 68, 68, 0.1), 0 10px 10px -5px rgba(239, 68, 68, 0.04)';
+            toast.style.zIndex = '99999';
+            toast.style.fontFamily = "'Outfit', 'Inter', sans-serif";
+            toast.style.fontSize = '14px';
+            toast.style.fontWeight = '600';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.gap = '10px';
+            toast.style.transition = 'all 0.3s ease';
+            
+            toast.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Too many requests. Please retry after <span id="rate-limit-countdown">${retryAfter}</span> seconds.</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            let seconds = parseInt(retryAfter, 10) || 60;
+            const countdownInterval = setInterval(() => {
+                seconds--;
+                const countdownSpan = document.getElementById('rate-limit-countdown');
+                if (countdownSpan) {
+                    countdownSpan.textContent = seconds;
+                }
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 1000);
+        }
+
+        axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 429) {
+                    const retryAfter = error.response.headers['retry-after'] || '60';
+                    showRateLimitToast(retryAfter);
+                }
+                return Promise.reject(error);
+            }
+        );
+    </script>
+    
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     
     <link rel="stylesheet" href="{% static 'css/react_driver.css' %}">
@@ -97,6 +180,14 @@
                 }
             };
 
+            const toggleMapView = () => {
+                if (view === 'map') {
+                    setView('list');
+                } else {
+                    setView('map');
+                }
+            };
+
             if (isDesktop) {
                 // Desktop Dual Column Layout
                 const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED');
@@ -126,13 +217,22 @@
                                         <h4 className="font-bold text-[#191970]">{data.user.username}</h4>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => window.location.href='/logout/'}
-                                    className="p-2 rounded-xl bg-white hover:bg-red-50 text-[#64748b] hover:text-red-500 border border-black/5 transition-all"
-                                    title="Logout"
-                                >
-                                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                                </button>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={toggleMapView}
+                                        className={`p-2 rounded-xl transition-all ${view === 'map' ? 'bg-[#191970] text-white' : 'bg-white text-[#191970] border border-black/5'}`}
+                                        title="Toggle Map"
+                                    >
+                                        <i className="fa-solid fa-map"></i>
+                                    </button>
+                                    <button 
+                                        onClick={() => window.location.href='/logout/'}
+                                        className="p-2 rounded-xl bg-white hover:bg-red-50 text-[#64748b] hover:text-red-500 border border-black/5 transition-all"
+                                        title="Logout"
+                                    >
+                                        <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Overview Statistics Cards */}
@@ -199,12 +299,14 @@
                             </div>
                         </div>
 
-                        {/* Right Content Panel - Selected Details View */}
-                        <div className="flex-1 flex flex-col glass-card rounded-[32px] p-8 overflow-hidden">
-                            {selectedOrder ? (
-                                <DetailView order={selectedOrder} onBack={handleBack} isDesktop={true} />
+                        {/* Right Content Panel - Selected Details View or Map */}
+                        <div className="flex-1 flex flex-col glass-card rounded-[32px] overflow-hidden">
+                            {view === 'map' ? (
+                                <MapView data={data} onOrderClick={handleOrderClick} isDesktop={true} />
+                            ) : selectedOrder ? (
+                                <div className="p-8 h-full flex flex-col"><DetailView order={selectedOrder} onBack={handleBack} isDesktop={true} /></div>
                             ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                                     <div className="w-20 h-20 rounded-full bg-[#191970]/5 flex items-center justify-center text-[#191970] mb-4 animate-bounce">
                                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
                                             <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
@@ -225,13 +327,14 @@
             // Mobile/Tablet Standard App Layout
             return (
                 <div className="flex flex-col h-screen bg-transparent">
-                    {view === 'list' && <ListView data={data} onOrderClick={handleOrderClick} />}
+                    {view === 'list' && <ListView data={data} onOrderClick={handleOrderClick} setView={setView} />}
+                    {view === 'map' && <MapView data={data} onOrderClick={handleOrderClick} onBack={handleBack} isDesktop={false} />}
                     {view === 'detail' && <DetailView order={selectedOrder} onBack={handleBack} isDesktop={false} />}
                 </div>
             );
         };
 
-        const ListView = ({ data, onOrderClick }) => {
+        const ListView = ({ data, onOrderClick, setView }) => {
             const forwarded = data.active_requests.filter(r => r.status_raw === 'FORWARDED');
             const onTheWay = data.active_requests.filter(r => r.status_raw === 'ON_THE_WAY');
 
@@ -311,11 +414,11 @@
                     <div className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t border-black/5 shadow-[0_-4px_25px_rgba(25,25,112,0.06)] z-20 pb-safe">
                         <div className="flex justify-around items-center h-16">
                             <button
-                                onClick={() => window.location.href='/logout/'}
-                                className="flex flex-col items-center justify-center w-24 h-full text-[#64748b] hover:text-red-500 transition-colors"
+                                onClick={() => setView('map')}
+                                className="flex flex-col items-center justify-center w-24 h-full text-[#64748b] hover:text-[#191970] transition-colors"
                             >
-                                <i className="fa-solid fa-arrow-right-from-bracket text-lg mb-1"></i>
-                                <span className="text-[10px] font-bold uppercase tracking-wider">Logout</span>
+                                <i className="fa-solid fa-map-location-dot text-lg mb-1"></i>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Map</span>
                             </button>
                             <div className="flex flex-col items-center justify-center">
                                 <div className="w-12 h-12 rounded-full bg-[#191970] flex items-center justify-center text-white shadow-lg shadow-[#191970]/30 animate-pulse">
@@ -509,6 +612,69 @@
                             )}
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        const MapView = ({ data, onOrderClick, onBack, isDesktop }) => {
+            const mapRef = React.useRef(null);
+            const [mapInstance, setMapInstance] = useState(null);
+
+            useEffect(() => {
+                if (!mapRef.current) return;
+                
+                // Initialize map (Default coords if no jobs)
+                const map = L.map(mapRef.current).setView([23.8103, 90.4125], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                const bounds = [];
+
+                data.active_requests.forEach(req => {
+                    if (req.latitude && req.longitude) {
+                        const markerColor = req.status_raw === 'ON_THE_WAY' ? '#10b981' : '#38bdf8';
+                        const myIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div style="background-color:${markerColor};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
+
+                        const marker = L.marker([req.latitude, req.longitude], {icon: myIcon}).addTo(map);
+                        marker.bindPopup(`<b>${req.volume_liters}L Delivery</b><br>${req.resident_address}<br><button onclick="window.selectOrderFromMap(${req.id})" style="margin-top:5px;background:#191970;color:white;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;">View Details</button>`);
+                        bounds.push([req.latitude, req.longitude]);
+                    }
+                });
+
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, {padding: [50, 50]});
+                }
+
+                setMapInstance(map);
+
+                return () => {
+                    map.remove();
+                };
+            }, [data]);
+
+            useEffect(() => {
+                window.selectOrderFromMap = (id) => {
+                    const order = data.active_requests.find(r => r.id === id);
+                    if (order) onOrderClick(order);
+                };
+            }, [data, onOrderClick]);
+
+            return (
+                <div className={`flex flex-col h-full bg-slate-50 relative ${isDesktop ? 'rounded-[32px] overflow-hidden' : ''}`}>
+                    {!isDesktop && (
+                        <div className="bg-[#191970] p-4 flex items-center shrink-0 z-[1000] shadow-md pt-safe">
+                            <button onClick={onBack} className="text-white mr-4 p-2"><i className="fa-solid fa-arrow-left"></i></button>
+                            <h2 className="text-white font-bold">Delivery Route Map</h2>
+                        </div>
+                    )}
+                    <div ref={mapRef} className="flex-1 w-full z-0 h-full"></div>
                 </div>
             );
         };

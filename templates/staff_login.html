@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Login - CASS</title>
+    <title>Staff Portal Sign In | CASS Administration</title>
+    <meta name="description" content="Sign in to CASS Operations and Management Portal for fleet dispatch, water reservoir telemetry, and billing administration.">
+    <meta name="keywords" content="CASS Staff, Admin Portal, Water Utility Dispatch, Grid Management">
+    <meta name="robots" content="index, follow">
     {% if system_settings and system_settings.branding_logo %}
     <link rel="icon" href="{{ system_settings.branding_logo.url }}">
     {% endif %}
@@ -45,6 +48,7 @@
                 <label>Password</label>
                 <input type="password" name="password" required placeholder="Password">
             </div>
+            <input type="hidden" name="device_fingerprint" id="device_fingerprint">
             <button type="submit" class="btn-submit">Access Dashboard</button>
         </form>
 
@@ -53,6 +57,18 @@
         </div>
     </div>
     </div>
+
+    <script>
+        // Basic Client-Side Device Fingerprinting
+        const fp = navigator.userAgent + "|" + screen.width + "x" + screen.height + "|" + navigator.language;
+        let hash = 0;
+        for (let i = 0; i < fp.length; i++) {
+            let chr = fp.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0;
+        }
+        document.getElementById('device_fingerprint').value = hash.toString(16);
+    </script>
 
                 
     <div class="auth-footer">
